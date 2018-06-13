@@ -18,7 +18,7 @@
  *  Jeremy Wootten <jeremywootten@gmail.com>
  */
 
-namespace gnonogram-tools {
+namespace GnonogramTools {
 /*** The View class manages the header, clue label widgets and the drawing widget under instruction
    * from the controller. It signals user interaction to the controller.
 ***/
@@ -33,8 +33,7 @@ public class View : Gtk.ApplicationWindow {
 
     construct {
         resizable = true;
-        drawing_with_state = CellState.UNDEFINED;
-        header_bar = new Gtk.HeaderBar ();
+        var header_bar = new Gtk.HeaderBar ();
         header_bar.get_style_context ().add_class ("default-decoration");
         header_bar.set_has_subtitle (true);
         header_bar.set_show_close_button (true);

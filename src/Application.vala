@@ -19,12 +19,9 @@
  */
 
 public class GnonogramTools.App : Gtk.Application {
-    construct {
-        application_id = gnonogram-tools.APP_ID;
-        program_name = gnonogram-tools.APP_NAME;
-        app_launcher = gnonogram-tools.LAUNCHER;
-        build_version = gnonogram-tools.VERSION;
+    private Controller controller;
 
+    construct {
         flags = ApplicationFlags.HANDLES_OPEN;
 
         SimpleAction quit_action = new SimpleAction ("quit", null);
@@ -50,9 +47,8 @@ public class GnonogramTools.App : Gtk.Application {
     }
 }
 
-public static App get_app () {
-    return Application.get_default () as App;
-}
+public static GnonogramTools.App get_app () {
+    return Application.get_default () as GnonogramTools.App;
 }
 
 public static int main (string[] args) {

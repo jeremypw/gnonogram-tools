@@ -35,7 +35,7 @@ public class Controller : GLib.Object {
     public Gtk.Window window {get {return (Gtk.Window)view;}}
 
     construct {
-        view = new View (model);
+        view = new View ();
 
         var schema_source = GLib.SettingsSchemaSource.get_default ();
         if (schema_source.lookup (SETTINGS_SCHEMA, true) != null &&
@@ -46,8 +46,6 @@ public class Controller : GLib.Object {
         } else {
             warning ("No settings schemas found - will not save settings or state");
         }
-
-        restore_settings (); /* May change load_game_dir and save_game_dir */
     }
 
     public Controller () {

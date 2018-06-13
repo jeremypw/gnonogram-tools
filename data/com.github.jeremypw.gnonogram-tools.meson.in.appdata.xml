@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+    <id>com.github.jeremypw.gnonogram-tools.desktop</id>
+    <metadata_license>CC-BY-SA-3.0</metadata_license>
+    <project_group>jeremypw</project_group>
+    <project_license>GPL-3.0+</project_license>
+    <name>gnonogram-tools</name>
+    ​<mimetypes>
+    ​    <mimetype>application/x-gno</mimetype>
+    ​</mimetypes>
+    <summary>Create and solve gnonogram puzzles</summary>
+    <description>
+        <p>An implementation of the Japanese logic puzzle "Nonograms"</p>
+        <p>
+            <ul>
+                <li>Draw puzzles</li>
+                <li>Generate random puzzles of chosen difficulty</li>
+            </ul>
+        </p>
+    </description>
+    <categories>
+        <category>Game</category>
+        <category>LogicGame</category>
+    </categories>
+    <releases>
+        <release version="1.2.2" date="2018-05-17" urgency="low">
+            <description>
+                <ul>
+                    <li>Use scrolled window when grid larger than screen</li>
+                    <li>Fix some bugs with clue label formating</li>
+                    <li>Toast has own copy of message to avoid possible crash</li>
+                    <li>Conditional compilation with Gtk version  >=3.22</li>
+                    <li>Some code refactoring and cleanup</li>
+                    <li>Various small bug fixes</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.2.1" date="2018-03-30" urgency="low">
+            <description>
+                <ul>
+                    <li>Fix crash when dragging across grid edge</li>
+                    <li>Clear puzzle name when resized</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.2.0" date="2018-03-28" urgency="low">
+            <description>
+                <ul>
+                    <li>Hint button</li>
+                    <li>Strikethrough completed blocks in clue label (with option to disable)</li>
+                    <li>Clue label turns red if completed incorrectly (with option to disable)</li>
+                    <li>Additional shortcuts</li>
+                    <li>Some code refactoring and cleanup</li>
+                    <li>Various bug fixes</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.1.0" date="2018-02-16" urgency="low">
+            <description>
+                <ul>
+                    <li>Save and restore move history</li>
+                    <li>Fade completed clues when solving</li>
+                    <li>Generate difficult puzzles faster</li>
+                    <li>Add redo button</li>
+                    <li>Reorder header bar</li>
+                    <li>Various bug fixes</li>
+                    <li>Some restyling</li>
+                    <li>Some code refactoring and cleanup</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.0.6" date="2018-02-03" urgency="low">
+            <description>
+                <ul>
+                    <li>Add brand styling and update screenshots</li>
+                    <li>Fix possible failed assertion in advanced solver</li>
+                    <li>Fix some resizing isses</li>
+                    <li>Fix some loading and saving issues</li>
+                    <li>Some code refactoring and cleanup</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.0.5" date="2018-01-20" urgency="low">
+            <description>
+                <ul>
+                    <li>Fix regression in game generator</li>
+                    <li>Fix error in solver</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.0.4" date="2018-01-18" urgency="low">
+            <description>
+                <ul>
+                    <li>Fix post_install.py script</li>
+                    <li>Remove unused or deprecated config variables</li>
+                    <li>Replace deprecated Gtk.Stock items</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.0.3" date="2018-01-18" urgency="low">
+            <description>
+                <ul>
+                    <li>Fix first run after clean install problems</li>
+                    <li>More complete uninstall</li>
+                    <li>Provide mimeinfo and icon</li>
+                    <li>Various small bug fixes</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.0.2" date="2018-01-12" urgency="low">
+            <description>
+                <ul>
+                    <li>Fix debian files</li>
+                    <li>Fix .desktop file</li>
+                    <li>Fix .appdata file</li>
+                    <li>Builds with dpkg-buildpackage and Travis CI</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.0.1" date="2018-01-11" urgency="low">
+            <description>
+                <ul>
+                    <li>Correct dependencies for xenial build</li>
+                </ul>
+            </description>
+        </release>
+        <release version="1.0.0" date="2018-01-09" urgency="low">
+            <description>
+                <p>Initial release.</p>
+                <ul>
+                    <li>Draw puzzles</li>
+                    <li>Generate random puzzles</li>
+                    <li>Check for errors while solving</li>
+                    <li>Adjust size of grid</li>
+                    <li>Adjust difficulty of generated puzzles</li>
+                    <li>Save and restore program state and settings</li>
+                </ul>
+            </description>
+        </release>
+    </releases>
+    <provides>
+        <binary>com.github.jeremypw.gnonogram-tools</binary>
+    </provides>
+    <screenshots>
+        <screenshot type="default">
+            <image>https://raw.githubusercontent.com/jeremypw/gnonogram-tools/master/data/screenshots/Solving.png</image>
+        </screenshot>
+        <screenshot>
+            <image>https://raw.githubusercontent.com/jeremypw/gnonogram-tools/master/data/screenshots/Designing.png</image>
+        </screenshot>
+        <screenshot>
+            <image>https://raw.githubusercontent.com/jeremypw/gnonogram-tools/master/data/screenshots/Settings.png</image>
+        </screenshot>
+    </screenshots>
+
+    <developer_name>Jeremy P Wootten</developer_name>
+    <url type="homepage">https://github.com/jeremypw/gnonogram-tools</url>
+    <url type="bugtracker">https://github.com/jeremypw/gnonogram-tools/issues</url>
+    <url type="help">https://github.com/jeremypw/gnonogram-tools</url>
+    <update_contact>jeremywootten@gmail.com</update_contact>
+
+    <custom>
+        <value key="x-appcenter-color-primary">#d4d4d4</value>
+        <value key="x-appcenter-color-primary-text">#180297</value>
+    </custom>
+</component>

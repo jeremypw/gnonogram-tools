@@ -1,0 +1,375 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-09-06 18:03+0100\n"
+"PO-Revision-Date: 2016-05-27 15:29+0000\n"
+"Last-Translator: Maxwell Barvian <Unknown>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Launchpad-Export-Date: 2016-12-31 04:43+0000\n"
+"X-Generator: Launchpad (build 18298)\n"
+
+#: src/gnonograms.vala:34
+msgid "Gnonograms"
+msgstr ""
+
+#: src/gnonograms.vala:46
+msgid "translator-credits"
+msgstr ""
+"Launchpad Contributions:\n"
+"  Fuad https://launchpad.net/~fuad-mammadovf\n"
+"  Maxwell Barvian https://launchpad.net/~mbarvian-deactivatedaccount"
+
+#: src/core/Gnonogram_filewriter.vala:170
+msgid "Name and save this puzzle"
+msgstr ""
+
+#: src/core/Gnonogram_filewriter.vala:171 src/core/Gnonogram_filereader.vala:86
+msgid "Gnonogram puzzles"
+msgstr ""
+
+#: src/core/Enums.vala:36
+msgid "Very Easy"
+msgstr ""
+
+#: src/core/Enums.vala:38
+msgid "Easy"
+msgstr ""
+
+#: src/core/Enums.vala:40
+msgid "Moderately difficult"
+msgstr ""
+
+#: src/core/Enums.vala:42
+msgid "Difficult"
+msgstr ""
+
+#: src/core/Enums.vala:44
+msgid "Very Difficult"
+msgstr ""
+
+#: src/core/Enums.vala:46
+msgid "Advanced logic required"
+msgstr ""
+
+#: src/core/Enums.vala:48
+msgid "Possibly ambiguous"
+msgstr ""
+
+#: src/core/Constants.vala:30
+msgid "?"
+msgstr ""
+
+#: src/core/utils.vala:247
+msgid "Built in puzzles"
+msgstr ""
+
+#: src/core/utils.vala:256
+msgid "Save solution too"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:85
+msgid "Choose a puzzle"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:223
+msgid "Missing clues"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:231
+msgid "Invalid clue"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:243
+msgid "Solution grid or working grid missing"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:250
+msgid "Wrong number of rows in solution or working grid"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:257
+msgid "Wrong number of columns in solution or working grid"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:264
+msgid "Invalid cell state"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:284
+msgid "Missing game state"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:291
+msgid "Could not determine game state in loaded game file"
+msgstr ""
+
+#: src/core/Gnonogram_filereader.vala:302
+#, c-format
+msgid "Invalid game state '%s' in loaded game file"
+msgstr ""
+
+#: src/widgets/Gnonogram_label.vala:119
+#, c-format
+msgid "Freedom = %u"
+msgstr ""
+
+#: src/widgets/ViewModeButton.vala:49
+msgid "Draw a pattern"
+msgstr ""
+
+#: src/widgets/ViewModeButton.vala:50
+msgid "Solve a puzzle"
+msgstr ""
+
+#: src/widgets/AppMenu.vala:76
+msgid "Rows"
+msgstr ""
+
+#: src/widgets/AppMenu.vala:77
+msgid "Columns"
+msgstr ""
+
+#: src/widgets/AppMenu.vala:105
+msgid "Options"
+msgstr ""
+
+#: src/widgets/AppMenu.vala:257
+msgid "Difficulty"
+msgstr ""
+
+#: src/widgets/Progress_indicator.vala:54
+msgid "Cancel solving"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:226
+msgid "Blank sheet"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:237
+msgid "Random pattern"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:264
+msgid "Game generation was cancelled"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:266
+msgid "Failed to generate game of required grade"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:270
+#, c-format
+msgid "Difficulty: %s"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:272
+msgid "Error occurred in solver"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:459
+msgid "Dimensions too large"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:462
+msgid "Dimensions too small"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:468
+msgid "Dimensions missing"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:476
+msgid "Clues missing"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:501
+msgid "Clues contradictory"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:504
+msgid "Puzzle not solved by computer - may not be possible"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:554
+msgid "Correct solution"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:557
+msgid "There are errors"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:773 src/Gnonogram_controller.vala:794
+msgid "Solving was cancelled"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:776
+#, c-format
+msgid "Simple solution found. %s"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:779
+msgid "No simple solution found"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:797
+#, c-format
+msgid "Advanced solution found. %s"
+msgstr ""
+
+#: src/Gnonogram_controller.vala:799
+msgid "No advanced solution found"
+msgstr ""
+
+#: src/Gnonogram_view.vala:125
+msgid "Setting"
+msgstr ""
+
+#: src/Gnonogram_view.vala:126
+#, fuzzy
+msgid "Clear canvas"
+msgstr "Girişi təmizlə"
+
+#: src/Gnonogram_view.vala:129 src/Gnonogram_view.vala:309
+msgid "Solving"
+msgstr ""
+
+#: src/Gnonogram_view.vala:130
+msgid "Restart solving"
+msgstr ""
+
+#: src/Gnonogram_view.vala:158
+msgid "Gnonograms for Elementary"
+msgstr ""
+
+#: src/Gnonogram_view.vala:163
+msgid "Load a Game from File"
+msgstr ""
+
+#: src/Gnonogram_view.vala:168
+msgid "Save a Game to File"
+msgstr ""
+
+#: src/Gnonogram_view.vala:173
+msgid "Generate a Random Game"
+msgstr ""
+
+#: src/Gnonogram_view.vala:178
+msgid "Undo Any Errors"
+msgstr ""
+
+#: src/Gnonogram_view.vala:189
+msgid "Solve by Computer"
+msgstr ""
+
+#: src/Gnonogram_view.vala:316
+msgid "Generating"
+msgstr ""
+
+#: src/Gnonogram_view.vala:754
+#, c-format
+msgid "%u error found"
+msgstr ""
+
+#: src/Gnonogram_view.vala:754
+#, c-format
+msgid "%u errors found"
+msgstr ""
+
+#: src/Gnonogram_view.vala:757
+msgid "No errors"
+msgstr ""
+
+#~ msgid "Calculator"
+#~ msgstr "Kalkulyator"
+
+#~ msgid "History"
+#~ msgstr "Keçmiş"
+
+#~ msgid "Value to add:"
+#~ msgstr "Toplamaq üçün qiymət"
+
+#~ msgid "Result"
+#~ msgstr "Cavab"
+
+#~ msgid "Expression"
+#~ msgstr "İfadə"
+
+#~ msgid "Close"
+#~ msgstr "Bağla"
+
+#~ msgid "Add"
+#~ msgstr "Topla"
+
+#~ msgid "Show extended functionality"
+#~ msgstr "Genişləndirilmiş funksionallığı göstər"
+
+#~ msgid "Calculate Result"
+#~ msgstr "Cavabı hesabla"
+
+#~ msgid "Add last result"
+#~ msgstr "Axırıncı cavabı əlavə et"
+
+#~ msgid "Backspace"
+#~ msgstr "Sil"
+
+#~ msgid "Subtract"
+#~ msgstr "Çıx"
+
+#~ msgid "Multiply"
+#~ msgstr "Vur"
+
+#~ msgid "Divide"
+#~ msgstr "Böl"
+
+#~ msgid "Percentage"
+#~ msgstr "Faiz"
+
+#~ msgid "Start Group"
+#~ msgstr "Qrup başlat"
+
+#~ msgid "End Group"
+#~ msgstr "Qrupu bitir"
+
+#~ msgid "Exponent"
+#~ msgstr "Göstərici"
+
+#~ msgid "Root"
+#~ msgstr "Kök"
+
+#~ msgid "Sine"
+#~ msgstr "Sinus"
+
+#~ msgid "Hyperbolic Sine"
+#~ msgstr "Hiperbolik sinus"
+
+#~ msgid "Cosine"
+#~ msgstr "Kosinus"
+
+#~ msgid "Hyperbolic Cosine"
+#~ msgstr "Hiperbolik kosinus"
+
+#~ msgid "Tangent"
+#~ msgstr "Tangens"
+
+#~ msgid "Hyperbolic Tangent"
+#~ msgstr "Hiperbolik tangens"
+
+#~ msgid "Pi"
+#~ msgstr "Pi"
+
+#~ msgid "Euler's Number"
+#~ msgstr "Eyler ədədi"
+
+#~ msgid "Hide extended functionality"
+#~ msgstr "Genişlədilmiş funksionallığı gizlət"
+
+#~ msgid "'%s' is invalid."
+#~ msgstr "'%s' geçərsizdir"
+
+#~ msgid "'%s' is unknown."
+#~ msgstr "'%s' naməlumdur"

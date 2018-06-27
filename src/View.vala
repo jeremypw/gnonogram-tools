@@ -19,30 +19,39 @@
  */
 
 namespace GnonogramTools {
-/*** The View class manages the header, clue label widgets and the drawing widget under instruction
-   * from the controller. It signals user interaction to the controller.
-***/
 public class View : Gtk.ApplicationWindow {
 
 /**PUBLIC**/
 
     /**PRIVATE**/
     /* ----------------------------------------- */
-    public View () {
-    }
-
     construct {
         resizable = true;
+        set_position (Gtk.WindowPosition.CENTER);
         var header_bar = new Gtk.HeaderBar ();
         header_bar.get_style_context ().add_class ("default-decoration");
         header_bar.set_has_subtitle (true);
         header_bar.set_show_close_button (true);
 
-        title = _("Gnonogram Tools for Elementary");
-        set_titlebar (header_bar);
+        var main_stack = new Gtk.Stack ();
+        var clue_entry = new ClueEntryView ();
+        var label2 = new Gtk.Label ("Hello 2");
 
-        var label = new Gtk.Label ("Hello");
-        add (label);
+        main_stack.add_titled (clue_entry, "clue-entry", "Clue Entry");
+        main_stack.add_titled (label2, "img2gno", "Convert Image");
+
+        var stack_sidebar = new Gtk.StackSidebar ();
+        stack_sidebar.stack = main_stack;
+
+        var paned = new Gtk.Paned (Gtk.Orientation.HORIZONTAL);
+        paned.add1 (stack_sidebar);
+        paned.add2 (main_stack);
+
+        add (paned);
+        set_default_size (900, 600);
+        set_size_request (750, 500);
+        set_titlebar (header_bar);
+        title = _("Gnonogram Tools for Elementary");
     }
 }
 }

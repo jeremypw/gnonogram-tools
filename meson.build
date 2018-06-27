@@ -26,6 +26,8 @@ executable (
     'src/Application.vala',
     'src/Controller.vala',
     'src/View.vala',
+    'src/tools/ClueEntryView.vala',
+
     dependencies : [
         dependency ('gtk+-3.0'),
         dependency ('gee-0.8'),

@@ -18,10 +18,6 @@
  *  Jeremy Wootten <jeremywootten@gmail.com>
  */
 namespace GnonogramTools {
-/*** Controller class is created by the Application class. It coordinates all other classes and
-   * provides business logic. Most of its properties and functions are private.
-***/
-
 const string SETTINGS_SCHEMA = "com.github.jeremypw.gnonogram-tools.settings";
 const string STATE_SCHEMA = "com.github.jeremypw.gnonogram-tools.saved-state";
 

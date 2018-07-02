@@ -1,4 +1,11 @@
 i18n.merge_file (
+    'post_uninstall',
+    input: 'post_uninstall.py.in',
+    output: 'post_uninstall.py',
+    po_dir: join_paths (meson.source_root (), 'po', 'extra'),
+    install: false,
+)
+i18n.merge_file (
     'desktop',
     input: meson.project_name () + '.meson.in.desktop',
     output: meson.project_name () + '.desktop',

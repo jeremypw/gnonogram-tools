@@ -15,13 +15,5 @@ subprocess.call(['glib-compile-schemas', schemadir])
 print('Resetting dconf path ...' + schemapath)
 subprocess.call(['dconf', 'reset', '-f', schemapath])
 
-print('Updating icon cache...')
-subprocess.call(['gtk-update-icon-cache', '-t', '-f', icondir])
-print('Updating mimetype database...')
-subprocess.call(['update-mime-database', mimedir])
 print('Updating desktop database...')
 subprocess.call(['update-desktop-database', desktopdir])
-
-print('Removing temporary directory')
-homedir = os.environ['HOME']
-subprocess.call(['rm', '-R', homedir + tmpdirpath]);

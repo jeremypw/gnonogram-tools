@@ -1,4 +1,8 @@
 public class GnonogramTools.ClueEntryView : Gtk.Grid {
+    private ClueEntryGrid row_entry;
+    private ClueEntryGrid col_entry;
+    private Gtk.Button save_button;
+
     construct {
         column_spacing = 12;
         row_spacing = 6;
@@ -13,18 +17,26 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         var rows_grid = new DimensionGrid (rows_setting);
         var cols_grid = new DimensionGrid (cols_setting);
 
-        var row_entry = new ClueEntryGrid ();
-        var col_entry = new ClueEntryGrid ();
+        row_entry = new ClueEntryGrid ();
+        col_entry = new ClueEntryGrid ();
+
+        var bbox = new Gtk.ButtonBox (Gtk.Orientation.HORIZONTAL);
+        save_button = new Gtk.Button.with_label (_("Save"));
+        bbox.add (save_button);
 
         attach (rows_grid, 0, 0, 1, 1);
         attach (cols_grid, 1, 0, 1, 1);
         attach (row_entry, 0, 1, 1, 1);
         attach (col_entry, 1, 1, 1, 1);
+        attach (bbox, 0, 2, 2, 1);
 
         rows_setting.value_changed.connect ((val) => {
             row_entry.update_n_entries ((int)val);
             col_entry.size = val;
         });
+
+        row_entry.notify["errors"].connect (update_valid);
+        col_entry.notify["errors"].connect (update_valid);
 
         cols_setting.value_changed.connect ((val) => {
             col_entry.update_n_entries ((int)val);
@@ -37,11 +49,23 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         });
     }
 
+    private void update_valid () {
+        save_button.sensitive = row_entry.errors + col_entry.errors == 0 && check_totals ();
+    }
+
+    private bool check_totals () {
+        var row_total = row_entry.get_total ();
+        var col_total = col_entry.get_total ();
+
+        return row_total == col_total;
+    }
+
     private class ClueEntryGrid : Gtk.ScrolledWindow  {
         private Gtk.Grid grid;
         private int n_entries = 0;
 
         public uint size {get; set;}
+        public uint errors {get; private set; default = 0;}
 
         construct {
             grid = new Gtk.Grid ();
@@ -82,6 +106,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
                             next.grab_focus ();
                         }
                     });
+
+                    entry.notify["valid"].connect (count_errors);
                 }
 
                 n_entries = _entries;
@@ -93,6 +119,30 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             }
 
             grid.show_all ();
+        }
+
+        private void count_errors () {
+            uint _errors = 0;
+            for (int i = 0; i < n_entries; i++) {
+                var entry = (ClueEntry)(grid.get_child_at (1, i - 1));
+                if (entry != null && !entry.valid) {
+                    _errors++;
+                }
+            }
+
+            errors = _errors;
+        }
+
+        public uint get_total () {
+            uint _total = 0;
+            for (int i = 0; i < n_entries; i++) {
+                var entry = (ClueEntry)(grid.get_child_at (1, i - 1));
+                if (entry != null) {
+                    _total += entry.extent;
+                }
+            }
+
+            return _total;
         }
     }
 
@@ -110,7 +160,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
 
     private class ClueEntry : Gtk.Entry {
         public uint size {get; set; default = 10;} /* Size of range connected to clue */
-        public bool valid {get; set;}
+        public bool valid {get; set; default = true;}
+        public uint extent {get; set; default = 0;}
 
         private string err_message = "";
 
@@ -121,7 +172,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             hexpand = true;
 
             notify["size"].connect (check_block_extent);
-            activate.connect (check_block_extent);
+            focus_out_event.connect (() => {check_block_extent (); return false;});
 
             notify["valid"].connect (() => {
                 if (!valid) {
@@ -138,7 +189,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         }
 
         private void check_block_extent () {
-            int extent = Gnonograms.Utils.blockextent_from_clue (text);
+            extent = Gnonograms.Utils.blockextent_from_clue (text);
             valid = extent <= size;
             err_message = valid ? "" : _("Block extent (%i) exceeds available space (%u)").printf (extent, size);
         }

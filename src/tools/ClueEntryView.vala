@@ -23,10 +23,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
 
         rows_setting.value_changed.connect ((val) => {
             row_entry.update_n_entries ((int)val);
+            col_entry.size = val;
         });
 
         cols_setting.value_changed.connect ((val) => {
             col_entry.update_n_entries ((int)val);
+            row_entry.size = val;
         });
 
         realize.connect (() => {
@@ -39,6 +41,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         private Gtk.Grid grid;
         private int n_entries = 0;
 
+        public uint size {get; set;}
+
         construct {
             grid = new Gtk.Grid ();
             grid.row_spacing = 6;
@@ -46,10 +50,15 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             grid.margin = 6;
             grid.expand = true;
             add (grid);
-        }
 
-        public ClueEntryGrid (uint entries = 0) {
-            update_n_entries ((int)entries);
+            notify["size"].connect (() => {
+                for (int i = 0; i < n_entries; i++) {
+                    var entry = (ClueEntry)(grid.get_child_at (1, i - 1));
+                    if (entry != null) {
+                        entry.size = this.size;
+                    }
+                }
+            });
         }
 
         public void update_n_entries (int _entries) {
@@ -63,11 +72,16 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             if (_entries > n_entries) {
                 for (int i = n_entries + 1; i <= _entries; i++) {
                     grid.attach (new Gtk.Label (i.to_string ()), 0, i - 1, 1, 1);
-                    var entry = new Gtk.Entry ();
-                    entry.text = "0";
-                    entry.placeholder_text = _("Enter numbers separated by commas e.g. 3,1,2,1");
-                    entry.hexpand = true;
+                    var entry = new ClueEntry ();
                     grid.attach (entry, 1, i - 1, 1, 1);
+
+                    var row = i; /* Fix value of 'i' for closure */
+                    entry.activate.connect (() => {
+                        var next = grid.get_child_at (1, row);
+                        if (next != null) {
+                            next.grab_focus ();
+                        }
+                    });
                 }
 
                 n_entries = _entries;
@@ -91,6 +105,42 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         public DimensionGrid (Gnonograms.AppSetting setting) {
             add (setting.get_heading ());
             add (setting.get_chooser ());
+        }
+    }
+
+    private class ClueEntry : Gtk.Entry {
+        public uint size {get; set; default = 10;} /* Size of range connected to clue */
+        public bool valid {get; set;}
+
+        private string err_message = "";
+
+        construct {
+            text = "0";
+            placeholder_text = _("Enter clue");
+            tooltip_text = _("Enter block lengths separated by commas e.g. 3,1,2,1");
+            hexpand = true;
+
+            notify["size"].connect (check_block_extent);
+            activate.connect (check_block_extent);
+
+            notify["valid"].connect (() => {
+                if (!valid) {
+                    set_icon_from_icon_name (Gtk.EntryIconPosition.SECONDARY, "dialog-warning");
+                    Idle.add (() => {
+                        set_icon_tooltip_text (Gtk.EntryIconPosition.SECONDARY, err_message);
+                        return false;
+                    });
+                } else {
+                    set_icon_tooltip_text (Gtk.EntryIconPosition.SECONDARY, null);
+                    secondary_icon_name = "";
+                }
+            });
+        }
+
+        private void check_block_extent () {
+            int extent = Gnonograms.Utils.blockextent_from_clue (text);
+            valid = extent <= size;
+            err_message = valid ? "" : _("Block extent (%i) exceeds available space (%u)").printf (extent, size);
         }
     }
 }

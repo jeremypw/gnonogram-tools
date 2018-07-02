@@ -36,9 +36,11 @@ public class View : Gtk.ApplicationWindow {
         var main_stack = new Gtk.Stack ();
         var clue_entry = new ClueEntryView ();
         var label2 = new Gtk.Label ("Hello 2");
+        var label3 = new Gtk.Label ("Hello 3");
 
         main_stack.add_titled (clue_entry, "clue-entry", "Clue Entry");
         main_stack.add_titled (label2, "img2gno", "Convert Image");
+        main_stack.add_titled (label3, "printgno", "Print gnonogram");
 
         var stack_sidebar = new Gtk.StackSidebar ();
         stack_sidebar.stack = main_stack;

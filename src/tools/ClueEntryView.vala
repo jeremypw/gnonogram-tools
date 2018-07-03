@@ -6,6 +6,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
     private Gtk.Button save_button;
     private Gtk.Button load_button;
     private Gtk.Button clear_button;
+    private Gtk.Entry name_entry;
 
     private bool valid {
         get {
@@ -29,6 +30,18 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         margin = 6;
         column_homogeneous = true;
 
+        var name_grid = new Gtk.Grid ();
+        name_grid.column_spacing = 6;
+        name_grid.margin = 12;
+
+        var name_label = new Gtk.Label (_("Name"));
+        name_entry = new Gtk.Entry ();
+        name_entry.placeholder_text = _("Enter the title of the game");
+        name_entry.hexpand = true;
+
+        name_grid.add (name_label);
+        name_grid.add (name_entry);
+
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
 
@@ -48,11 +61,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         bbox.add (save_button);
         bbox.add (clear_button);
 
-        attach (rows_grid, 0, 0, 1, 1);
-        attach (cols_grid, 1, 0, 1, 1);
-        attach (row_entry, 0, 1, 1, 1);
-        attach (col_entry, 1, 1, 1, 1);
-        attach (bbox, 0, 2, 2, 1);
+        attach (name_grid, 0, 0, 2, 1);
+        attach (rows_grid, 0, 1, 1, 1);
+        attach (cols_grid, 1, 1, 1, 1);
+        attach (row_entry, 0, 2, 1, 1);
+        attach (col_entry, 1, 2, 1, 1);
+        attach (bbox, 0, 3, 2, 1);
 
         rows_setting.value_changed.connect ((val) => {
             row_entry.update_n_entries ((int)val);
@@ -97,6 +111,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         if (!valid && !confirm_save_invalid ()) {
             return; 
         }
+
+        string game_name = name_entry.text != "" ? name_entry.text : Gnonograms.UNTITLED_NAME;
+
         var dim = Gnonograms.Dimensions ();
         dim.height = rows_setting.get_value ();
         dim.width = cols_setting.get_value ();
@@ -107,11 +124,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
 
         try {
             filewriter = new Gnonograms.Filewriter (window,
-                                                        null, null, null,
-                                                        dim,
-                                                        row_clues,
-                                                        col_clues,
-                                                        null, false);
+                                                    null, null, game_name,
+                                                    dim,
+                                                    row_clues,
+                                                    col_clues,
+                                                    null, false);
             filewriter.is_readonly = false;
             filewriter.write_game_file ();
         } catch (IOError e) {
@@ -151,6 +168,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
 
             row_entry.set_clues (row_clues);
             col_entry.set_clues (col_clues);
+
+            if (reader.name == Gnonograms.UNTITLED_NAME) {
+                name_entry.text = "";
+            } else {
+                name_entry.text = reader.name;
+            }
         } catch (IOError e) {
             if (!(e is IOError.CANCELLED)) {
                 var basename = reader.game_file.get_basename ();

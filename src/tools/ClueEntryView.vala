@@ -1,6 +1,8 @@
 public class GnonogramTools.ClueEntryView : Gtk.Grid {
     private ClueEntryGrid row_entry;
     private ClueEntryGrid col_entry;
+    private Gnonograms.ScaleGrid rows_setting;
+    private Gnonograms.ScaleGrid cols_setting;
     private Gtk.Button save_button;
 
     construct {
@@ -9,8 +11,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         margin = 6;
         column_homogeneous = true;
 
-        var rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
-        var cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
+        rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
+        cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
         rows_setting.set_value (10);
         cols_setting.set_value (10);
 
@@ -43,6 +45,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             row_entry.size = val;
         });
 
+        save_button.clicked.connect (save_game);
+
         realize.connect (() => {
             row_entry.update_n_entries ((int)(rows_setting.get_value ()));
             col_entry.update_n_entries ((int)(cols_setting.get_value ()));
@@ -58,6 +62,23 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         var col_total = col_entry.get_total ();
 
         return row_total == col_total;
+    }
+
+    private void save_game () {
+        var dim = Gnonograms.Dimensions ();
+        dim.height = rows_setting.get_value ();
+        dim.width = cols_setting.get_value ();
+
+        var row_clues = row_entry.get_clues ();
+        var col_clues = col_entry.get_clues ();
+
+        var filewriter = new Gnonograms.Filewriter ((Gtk.Window)(get_toplevel ()),
+                                                    null, null, null,
+                                                    dim,
+                                                    row_clues,
+                                                    col_clues,
+                                                    null, false);
+        filewriter.write_game_file ();
     }
 
     private class ClueEntryGrid : Gtk.ScrolledWindow  {
@@ -143,6 +164,16 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             }
 
             return _total;
+        }
+
+        public string[] get_clues () {
+            var clues = new string[n_entries];
+            for (int i = 0; i < n_entries; i++) {
+                var entry = (ClueEntry)(grid.get_child_at (1, i - 1));
+                clues[i] = entry != null ? entry.text : "0";
+            }
+
+            return clues;
         }
     }
 

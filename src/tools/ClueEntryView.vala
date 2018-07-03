@@ -5,6 +5,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
     private Gnonograms.ScaleGrid cols_setting;
     private Gtk.Button save_button;
     private Gtk.Button load_button;
+    private Gtk.Button clear_button;
 
     private bool valid {
         get {
@@ -40,8 +41,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         var bbox = new Gtk.ButtonBox (Gtk.Orientation.HORIZONTAL);
         load_button = new Gtk.Button.with_label (_("Load"));
         save_button = new Gtk.Button.with_label (_("Save"));
+        clear_button = new Gtk.Button.with_label (_("Clear"));
+        clear_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
+
         bbox.add (load_button);
         bbox.add (save_button);
+        bbox.add (clear_button);
 
         attach (rows_grid, 0, 0, 1, 1);
         attach (cols_grid, 1, 0, 1, 1);
@@ -51,16 +56,19 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
 
         rows_setting.value_changed.connect ((val) => {
             row_entry.update_n_entries ((int)val);
+            clear_game ();
             col_entry.size = val;
         });
 
         cols_setting.value_changed.connect ((val) => {
             col_entry.update_n_entries ((int)val);
+            clear_game ();
             row_entry.size = val;
         });
 
         save_button.clicked.connect (save_game);
         load_button.clicked.connect (load_game);
+        clear_button.clicked.connect (clear_game);
 
         realize.connect (() => {
             row_entry.update_n_entries ((int)(rows_setting.get_value ()));
@@ -76,6 +84,13 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         var col_total = col_entry.get_total ();
 
         return row_total == col_total;
+    }
+
+    private bool check_clear () {
+        var row_total = row_entry.get_total ();
+        var col_total = col_entry.get_total ();
+
+        return row_total + col_total == 0;
     }
 
     private void save_game () {
@@ -141,6 +156,15 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
                 var basename = reader.game_file.get_basename ();
                 Gnonograms.Utils.show_error_dialog (_("Unable to load %s").printf (basename), e.message, window);
             }
+        }
+    }
+
+    private void clear_game () {
+        if (check_clear () ||
+            Gnonograms.Utils.show_confirm_dialog (_("Delete existing clues?"), null, window)) {
+
+            row_entry.clear ();
+            col_entry.clear ();
         }
     }
 
@@ -246,6 +270,13 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             for (int i = 0; i < n_entries; i++) {
                 var entry = (ClueEntry)(grid.get_child_at (1, i));
                 entry.text = clues[i];
+            }
+        }
+
+        public void clear () {
+            for (int i = 0; i < n_entries; i++) {
+                var entry = (ClueEntry)(grid.get_child_at (1, i));
+                entry.text = "0";
             }
         }
     }

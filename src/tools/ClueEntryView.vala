@@ -5,6 +5,16 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
     private Gnonograms.ScaleGrid cols_setting;
     private Gtk.Button save_button;
 
+    private bool valid {
+        get {
+            if (row_entry == null) {
+                return false;
+            }
+
+            return row_entry.errors + col_entry.errors == 0 && check_totals ();
+        }
+    }
+
     construct {
         column_spacing = 12;
         row_spacing = 6;
@@ -37,9 +47,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             col_entry.size = val;
         });
 
-        row_entry.notify["errors"].connect (update_valid);
-        col_entry.notify["errors"].connect (update_valid);
-
         cols_setting.value_changed.connect ((val) => {
             col_entry.update_n_entries ((int)val);
             row_entry.size = val;
@@ -53,10 +60,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         });
     }
 
-    private void update_valid () {
-        save_button.sensitive = row_entry.errors + col_entry.errors == 0 && check_totals ();
-    }
-
     private bool check_totals () {
         var row_total = row_entry.get_total ();
         var col_total = col_entry.get_total ();
@@ -65,6 +68,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
     }
 
     private void save_game () {
+        if (!valid && !confirm_save_invalid ()) {
+            return; 
+        }
         var dim = Gnonograms.Dimensions ();
         dim.height = rows_setting.get_value ();
         dim.width = cols_setting.get_value ();
@@ -79,6 +85,22 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
                                                     col_clues,
                                                     null, false);
         filewriter.write_game_file ();
+    }
+
+    private bool confirm_save_invalid () {
+        string secondary_text = "";
+        if (row_entry.errors + col_entry.errors > 0) {
+            secondary_text = _("There is one or more invalid clues");
+        } else if (!check_totals ()) {
+            secondary_text = _("Total row blocks not equal to total column blocks");
+        }
+
+        var response = Gnonograms.Utils.show_dlg (_("Save an invalid game?"),
+                                                  Gtk.MessageType.QUESTION,
+                                                  secondary_text,
+                                                  (Gtk.Window)get_toplevel ());
+
+        return response == Gtk.ResponseType.YES;
     }
 
     private class ClueEntryGrid : Gtk.ScrolledWindow  {

@@ -242,7 +242,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
                 }
             }
 
-            update_size ();
             grid.show_all ();
         }
 
@@ -328,8 +327,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             placeholder_text = _("Enter clue");
             tooltip_text = _("Enter block lengths separated by commas e.g. 3,1,2,1");
             hexpand = true;
+            set_input_purpose (Gtk.InputPurpose.NUMBER);
 
-            notify["size"].connect (check_block_extent);
+            notify["size"].connect (() => {
+                valid = check_block_extent ();
+            });
 
             notify["valid"].connect (() => {
                 if (!valid) {
@@ -345,14 +347,44 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
             });
 
             notify["text"].connect (() => {
-                check_block_extent ();
+                valid = check_parse () && check_block_extent ();
             });
+
+            key_press_event.connect (on_key_press_event);
         }
 
-        private void check_block_extent () {
+        private bool check_block_extent () {
             extent = Gnonograms.Utils.blockextent_from_clue (text);
-            valid = extent <= size;
-            err_message = valid ? "" : _("Block extent (%i) exceeds available space (%u)").printf (extent, size);
+            bool res = extent <= size;
+            err_message = res ? "" : _("Block extent (%i) exceeds available space (%u)").printf (extent, size);
+            return res;
+        }
+
+        private bool check_parse () {
+            var blocks = Gnonograms.Utils.block_struct_array_from_clue (text);
+            bool res = true;
+
+            if (blocks.size > 1) {
+                for (int i = 1; i < blocks.size; i++) {
+                    if (blocks[i].length == 0) {
+                        res = false;
+                    }
+                }
+            }
+
+            err_message = res ? "" : _("Not a valid clue - zero length block");
+            return res;
+        }
+
+        private bool on_key_press_event (Gdk.EventKey event) {
+            var key = event.keyval;
+            var @char = (char)(Gdk.keyval_to_unicode (key));
+
+            if (@char.isalpha ()) {
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 }

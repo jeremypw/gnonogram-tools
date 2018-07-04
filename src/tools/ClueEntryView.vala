@@ -1,7 +1,7 @@
 public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterface {
     const string EDITOR_SETTINGS_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.settings";
     const string EDITOR_STATE_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.saved-state";
-    const string UNSAVED_FILENAME = "Unsaved clues" + Gnonograms.GAMEFILEEXTENSION;
+    const string UNSAVED_FILENAME = "ClueEditor" + Gnonograms.GAMEFILEEXTENSION;
 
     private ClueEntryGrid row_entry;
     private ClueEntryGrid col_entry;
@@ -158,6 +158,10 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 load_game (current_game_path);
             }
         }
+
+        if (current_game_path == "" && temporary_game_path != null) {
+            load_game (temporary_game_path);
+        }
     }
 
     public bool quit () {
@@ -242,11 +246,14 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         try {
             File? game_file = null;
             if (game_path != null) {
-                game_file = File.new_for_uri (game_path);
+                game_file = File.new_for_path (game_path);
+                if (!game_file.query_exists ()) {
+                    return;
+                }
             }
 
             string? load_dir_path = null;
-            if (settings != null) {
+            if (game_path == null && settings != null) {
                 load_dir_path = settings.get_string ("game-dir");
             }
 
@@ -273,7 +280,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             }
 
             /* Must do after clearing game */
-            if (reader.game_file != null) {
+            if (game_path != temporary_game_path && reader.game_file != null) {
                 var dir = reader.game_file.get_parent ();
                 if (dir != null && settings != null) {
                     settings.set_string ("game-dir", dir.get_uri ());
@@ -285,7 +292,10 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             }
         } catch (IOError e) {
             if (!(e is IOError.CANCELLED)) {
-                var basename = reader.game_file.get_basename ();
+                var basename = game_path ?? "";
+                if (reader != null && reader.game_file != null) {
+                    basename = reader.game_file.get_basename ();
+                }
                 Gnonograms.Utils.show_error_dialog (_("Unable to load %s").printf (basename), e.message, window);
             }
         }

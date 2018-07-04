@@ -26,7 +26,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
     private Gtk.Window? window {
         get {
-            return (Gtk.Window)get_toplevel ();
+            var w = get_toplevel ();
+            if (w is Gtk.Window) {
+                return (Gtk.Window)w;
+            }
+
+            return null;
         }
     }
 
@@ -101,7 +106,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         });
 
         save_button.clicked.connect (save_game);
-        load_button.clicked.connect (load_game);
+        load_button.clicked.connect (() => {load_game ();});
         clear_button.clicked.connect (clear_game);
 
         realize.connect (() => {
@@ -123,6 +128,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         rows_setting.set_value (rows);
         cols_setting.set_value (cols);
+
+        if (saved_state != null) {
+            var game_path = saved_state.get_string ("current-game-path");
+            load_game (game_path);
+        }
     }
 
     public bool quit () {
@@ -189,11 +199,21 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         return Gnonograms.Utils.show_confirm_dialog (_("Save an invalid game?"), secondary_text, window);
     }
 
-    private void load_game () {
+    private void load_game (string? game_path = null) {
         Gnonograms.Filereader? reader = null;
 
         try {
-            reader = new Gnonograms.Filereader (window, null, null, true);
+            File? game_file = null;
+            if (game_path != null) {
+                game_file = File.new_for_uri (game_path);
+            }
+
+            string? load_dir_path = null;
+            if (settings != null) {
+                load_dir_path = settings.get_string ("game-dir");
+            }
+
+            reader = new Gnonograms.Filereader (window, load_dir_path, game_file, true);
 
             if (reader.game_file != null) {
                 var dir = reader.game_file.get_parent ();

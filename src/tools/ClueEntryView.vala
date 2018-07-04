@@ -1,4 +1,7 @@
 public class GnonogramTools.ClueEntryView : Gtk.Grid {
+    const string EDITOR_SETTINGS_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.settings";
+    const string EDITOR_STATE_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.saved-state";
+
     private ClueEntryGrid row_entry;
     private ClueEntryGrid col_entry;
     private Gnonograms.ScaleGrid rows_setting;
@@ -7,6 +10,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
     private Gtk.Button load_button;
     private Gtk.Button clear_button;
     private Gtk.Entry name_entry;
+
+    private GLib.Settings? settings = null;
+    private GLib.Settings? saved_state = null;
 
     private bool valid {
         get {
@@ -25,6 +31,16 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
     }
 
     construct {
+        var schema_source = GLib.SettingsSchemaSource.get_default ();
+        if (schema_source.lookup (EDITOR_SETTINGS_SCHEMA, true) != null &&
+            schema_source.lookup (EDITOR_STATE_SCHEMA, true) != null) {
+
+            settings = new Settings (EDITOR_SETTINGS_SCHEMA);
+            saved_state = new Settings (EDITOR_STATE_SCHEMA);
+        } else {
+            warning ("No clue editor schemas found - will not save settings or state");
+        }
+
         column_spacing = 12;
         row_spacing = 6;
         margin = 6;

@@ -1,4 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
+    <schema path="/com/github/jeremypw/gnonogram-tools/saved-state/" id="com.github.jeremypw.gnonogram-tools.saved-state">
+        <key type="i" name="window-x">
+          <default>-1000</default>
+          <summary>Origin of window x coordinate</summary>
+          <description>
+            The x-coordinate of the window origin, or -1000 for centre window.
+          </description>
+        </key>
 
+        <key type="i" name="window-y">
+          <default>-1000</default>
+          <summary>Origin of window y coordinate</summary>
+          <description>
+            The x-coordinate of the window origin, or -1000 for centre window.
+          </description>
+        </key>
+
+    </schema>
+
+    <schema path="/com/github/jeremypw/gnonogram-tools/clue-editor/settings/" id="com.github.jeremypw.gnonogram-tools.clue-editor.settings">
+        <key type="u" name="rows">
+          <default>10</default>
+          <summary>number of rows in grid</summary>
+          <description>
+            The number of row clues to be entered.
+          </description>
+        </key>
+
+        <key type="u" name="columns">
+          <default>10</default>
+          <summary>number of columns in grid</summary>
+          <description>
+            The number of column clues to be entered.
+          </description>
+        </key>
+
+        <key type="s" name="game-dir">
+          <default>""</default>
+          <summary>custom directory for loading and saving</summary>
+          <description>
+            The directory used for loading and saving games.
+          </description>
+        </key>
+    </schema>
+
+    <schema path="/com/github/jeremypw/gnonogram-tools/clue-editor/saved-state/" id="com.github.jeremypw.gnonogram-tools.clue-editor.saved-state">
+        <key type="s" name="current-game-path">
+          <default>''</default>
+          <summary>Path to game currently being edited</summary>
+          <description>
+            The location where the current game edited was saved.
+          </description>
+        </key>
+    </schema>
 </schemalist>

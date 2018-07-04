@@ -18,12 +18,10 @@
  *  Jeremy Wootten <jeremywootten@gmail.com>
  */
 namespace GnonogramTools {
-const string SETTINGS_SCHEMA = "com.github.jeremypw.gnonogram-tools.settings";
 const string STATE_SCHEMA = "com.github.jeremypw.gnonogram-tools.saved-state";
 
 public class Controller : GLib.Object {
     private View view;
-    private GLib.Settings? settings = null;
     private GLib.Settings? saved_state = null;
 
 /** PUBLIC SIGNALS, PROPERTIES, FUNCTIONS AND CONSTRUCTOR **/
@@ -34,10 +32,7 @@ public class Controller : GLib.Object {
         view = new View ();
 
         var schema_source = GLib.SettingsSchemaSource.get_default ();
-        if (schema_source.lookup (SETTINGS_SCHEMA, true) != null &&
-            schema_source.lookup (STATE_SCHEMA, true) != null) {
-
-            settings = new Settings (SETTINGS_SCHEMA);
+        if (schema_source.lookup (STATE_SCHEMA, true) != null) {
             saved_state = new Settings (STATE_SCHEMA);
         } else {
             warning ("No settings schemas found - will not save settings or state");

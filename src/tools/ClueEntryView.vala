@@ -1,6 +1,7 @@
 public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterface {
     const string EDITOR_SETTINGS_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.settings";
     const string EDITOR_STATE_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.saved-state";
+    const string UNSAVED_FILENAME = "Unsaved clues" + Gnonograms.GAMEFILEEXTENSION;
 
     private ClueEntryGrid row_entry;
     private ClueEntryGrid col_entry;
@@ -13,6 +14,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
     private GLib.Settings? settings = null;
     private GLib.Settings? saved_state = null;
+
+    private string? temporary_game_path = null;
+    private string current_game_path = "";
 
     private bool valid {
         get {
@@ -39,6 +43,24 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
     construct {
         description = _("Clue Entry");
+
+        string data_home_folder_current = Path.build_path (Path.DIR_SEPARATOR_S,
+                                                           Environment.get_user_data_dir (),
+                                                           "gnonogram-tools",
+                                                           "unsaved"
+                                                           );
+        File file;
+        try {
+            file = File.new_for_path (data_home_folder_current);
+            file.make_directory_with_parents (null);
+        } catch (GLib.Error e) {
+            if (!(e is IOError.EXISTS)) {
+                warning ("Could not make %s - %s",file.get_uri (), e.message);
+            }
+        }
+
+        temporary_game_path = Path.build_path (Path.DIR_SEPARATOR_S, data_home_folder_current,
+                                               UNSAVED_FILENAME);
 
         var schema_source = GLib.SettingsSchemaSource.get_default ();
         if (schema_source.lookup (EDITOR_SETTINGS_SCHEMA, true) != null &&
@@ -79,7 +101,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         var bbox = new Gtk.ButtonBox (Gtk.Orientation.HORIZONTAL);
         load_button = new Gtk.Button.with_label (_("Load"));
         save_button = new Gtk.Button.with_label (_("Save"));
-        clear_button = new Gtk.Button.with_label (_("Clear"));
+        clear_button = new Gtk.Button.with_label (_("New Puzzle"));
         clear_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
 
         bbox.add (load_button);
@@ -95,19 +117,20 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         rows_setting.value_changed.connect ((val) => {
             row_entry.update_n_entries ((int)val);
-            clear_game ();
             col_entry.size = val;
         });
 
         cols_setting.value_changed.connect ((val) => {
             col_entry.update_n_entries ((int)val);
-            clear_game ();
             row_entry.size = val;
         });
 
-        save_button.clicked.connect (save_game);
+        save_button.clicked.connect (() => {save_game ();});
         load_button.clicked.connect (() => {load_game ();});
-        clear_button.clicked.connect (clear_game);
+        clear_button.clicked.connect (() => {
+            clear_game ();
+            clear_current_game_path ();
+        });
 
         realize.connect (() => {
             row_entry.update_n_entries ((int)(rows_setting.get_value ()));
@@ -130,14 +153,28 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         cols_setting.set_value (cols);
 
         if (saved_state != null) {
-            var game_path = saved_state.get_string ("current-game-path");
-            load_game (game_path);
+            current_game_path = saved_state.get_string ("current-game-path");
+            if (current_game_path != "") {
+                load_game (current_game_path);
+            }
         }
     }
 
     public bool quit () {
         settings.set_uint ("rows",  rows_setting.get_value ()); 
         settings.set_uint ("columns",  cols_setting.get_value ());
+
+
+        if (temporary_game_path != null && current_game_path == "") {
+            try {
+                var current_game = File.new_for_path (temporary_game_path);
+                current_game.@delete ();
+            } catch (GLib.Error e) {
+            } finally {
+                /* Save solution and current state */
+                save_game (temporary_game_path);
+            }
+        }
 
         return false;
     }
@@ -156,8 +193,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         return row_total + col_total == 0;
     }
 
-    private void save_game () {
-        if (!valid && !confirm_save_invalid ()) {
+    private void save_game (string? path = null) {
+        if (path == null && !valid && !confirm_save_invalid ()) {
             return; 
         }
 
@@ -173,7 +210,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         try {
             filewriter = new Gnonograms.Filewriter (window,
-                                                    null, null, game_name,
+                                                    null, path, game_name,
                                                     dim,
                                                     row_clues,
                                                     col_clues,
@@ -215,17 +252,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
             reader = new Gnonograms.Filereader (window, load_dir_path, game_file, true);
 
-            if (reader.game_file != null) {
-                var dir = reader.game_file.get_parent ();
-                if (dir != null && settings != null) {
-                    settings.set_string ("game-dir", dir.get_uri ());
-                }
-
-                if (saved_state != null) {
-                    saved_state.set_string ("current-game-path", reader.game_file.get_uri ());
-                }
-            }
-
             if (!reader.has_row_clues || !reader.has_col_clues) {
                 Gnonograms.Utils.show_error_dialog (_("Cannot load"), reader.err_msg, window);
                 return;
@@ -245,6 +271,18 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             } else {
                 name_entry.text = reader.name;
             }
+
+            /* Must do after clearing game */
+            if (reader.game_file != null) {
+                var dir = reader.game_file.get_parent ();
+                if (dir != null && settings != null) {
+                    settings.set_string ("game-dir", dir.get_uri ());
+                }
+
+                if (saved_state != null) {
+                    saved_state.set_string ("current-game-path", reader.game_file.get_uri ());
+                }
+            }
         } catch (IOError e) {
             if (!(e is IOError.CANCELLED)) {
                 var basename = reader.game_file.get_basename ();
@@ -254,11 +292,14 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     }
 
     private void clear_game () {
-        if (check_clear () ||
-            Gnonograms.Utils.show_confirm_dialog (_("Delete existing clues?"), null, window)) {
+        row_entry.clear ();
+        col_entry.clear ();
+        name_entry.text = "";
+    }
 
-            row_entry.clear ();
-            col_entry.clear ();
+    private void clear_current_game_path () {
+        if (saved_state != null) {
+            saved_state.set_string ("current-game-path", "");
         }
     }
 

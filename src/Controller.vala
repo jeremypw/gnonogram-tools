@@ -37,15 +37,35 @@ public class Controller : GLib.Object {
         } else {
             warning ("No settings schemas found - will not save settings or state");
         }
+
+        window.delete_event.connect (quit);
     }
 
     public Controller () {
+        restore_settings ();
         view.show_all ();
         view.present ();
     }
 
-    public void quit () {
+    private void restore_settings () {
+        if (saved_state != null) {
+            int x, y;
+            x = saved_state.get_int ("window-x");
+            y = saved_state.get_int ("window-y");
+            window.move (x, y);
+        }
+    }
+    public bool quit () {
+        view.quit ();
+
+        int x, y;
+        window.get_position (out x, out y);
+        saved_state.set_int ("window-x", x);
+        saved_state.set_int ("window-y", y);
+
         quit_app ();
+
+        return false;
     }
 
 /** PRIVATE **/

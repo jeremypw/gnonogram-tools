@@ -25,6 +25,9 @@ public class View : Gtk.ApplicationWindow {
 
     /**PRIVATE**/
     /* ----------------------------------------- */
+
+    private Gtk.Stack main_stack;
+
     construct {
         resizable = true;
         set_position (Gtk.WindowPosition.CENTER);
@@ -33,14 +36,14 @@ public class View : Gtk.ApplicationWindow {
         header_bar.set_has_subtitle (true);
         header_bar.set_show_close_button (true);
 
-        var main_stack = new Gtk.Stack ();
+        main_stack = new Gtk.Stack ();
         var clue_entry = new ClueEntryView ();
-        var label2 = new Gtk.Label ("Hello 2");
-        var label3 = new Gtk.Label ("Hello 3");
+        var tool2 = new DummyTool ("Hello 2", "Convert Image");
+        var tool3 = new DummyTool ("Hello 3", "Print gnonogram");
 
         main_stack.add_titled (clue_entry, "clue-entry", "Clue Entry");
-        main_stack.add_titled (label2, "img2gno", "Convert Image");
-        main_stack.add_titled (label3, "printgno", "Print gnonogram");
+        main_stack.add_titled (tool2, "img2gno", tool2.description);
+        main_stack.add_titled (tool3, "printgno", tool3.description);
 
         var stack_sidebar = new Gtk.StackSidebar ();
         stack_sidebar.stack = main_stack;
@@ -54,6 +57,26 @@ public class View : Gtk.ApplicationWindow {
         set_size_request (750, 500);
         set_titlebar (header_bar);
         title = _("Gnonogram Tools for Elementary");
+    }
+
+    public bool quit () {
+        bool stop = false;
+        foreach (Gtk.Widget w in main_stack.get_children ()) {
+            stop = ((GnonogramTools.ToolInterface)w).quit () || stop;
+        }
+
+        return stop;
+    }
+
+    private class DummyTool : Gtk.Label, GnonogramTools.ToolInterface {
+        public string description {get; set construct;}
+
+        public DummyTool (string message, string description) {
+            Object (
+                label: message,
+                description: description
+            );
+        }
     }
 }
 }

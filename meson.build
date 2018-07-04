@@ -26,6 +26,7 @@ executable (
     'src/Application.vala',
     'src/Controller.vala',
     'src/View.vala',
+    'src/tools/ToolInterface.vala',
     'src/tools/ClueEntryView.vala',
 
     dependencies : [

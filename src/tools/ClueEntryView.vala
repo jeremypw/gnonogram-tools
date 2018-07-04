@@ -1,4 +1,4 @@
-public class GnonogramTools.ClueEntryView : Gtk.Grid {
+public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterface {
     const string EDITOR_SETTINGS_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.settings";
     const string EDITOR_STATE_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.saved-state";
 
@@ -30,7 +30,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
         }
     }
 
+    public string description {get; set construct;}
+
     construct {
+        description = _("Clue Entry");
+
         var schema_source = GLib.SettingsSchemaSource.get_default ();
         if (schema_source.lookup (EDITOR_SETTINGS_SCHEMA, true) != null &&
             schema_source.lookup (EDITOR_STATE_SCHEMA, true) != null) {
@@ -107,6 +111,13 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
 
         rows_setting.set_value (10);
         cols_setting.set_value (10);
+    }
+
+    public bool quit () {
+        settings.set_uint ("rows",  rows_setting.get_value ()); 
+        settings.set_uint ("columns",  cols_setting.get_value ());
+
+        return false;
     }
 
     private bool check_totals () {

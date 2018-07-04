@@ -109,8 +109,20 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             col_entry.update_n_entries ((int)(cols_setting.get_value ()));
         });
 
-        rows_setting.set_value (10);
-        cols_setting.set_value (10);
+        restore_settings ();
+    }
+
+    private void restore_settings () {
+        uint rows = 10;
+        uint cols = 10;
+
+        if (settings != null) {
+            rows = settings.get_uint ("rows");
+            cols = settings.get_uint ("columns");
+        }
+
+        rows_setting.set_value (rows);
+        cols_setting.set_value (cols);
     }
 
     public bool quit () {
@@ -258,6 +270,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                         }
                     });
 
+                    entry.size = size;
                     entry.notify["valid"].connect (count_errors);
                 }
 
@@ -297,7 +310,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             uint _total = 0;
             for (int i = 0; i < n_entries; i++) {
                 var entry = (ClueEntry)(grid.get_child_at (1, i));
-                if (entry != null) {
+                if (entry.text != "" && entry.text != "0" ) {
                     _total += entry.extent;
                 }
             }

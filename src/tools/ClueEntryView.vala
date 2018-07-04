@@ -194,6 +194,18 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         try {
             reader = new Gnonograms.Filereader (window, null, null, true);
+
+            if (reader.game_file != null) {
+                var dir = reader.game_file.get_parent ();
+                if (dir != null && settings != null) {
+                    settings.set_string ("game-dir", dir.get_uri ());
+                }
+
+                if (saved_state != null) {
+                    saved_state.set_string ("current-game-path", reader.game_file.get_uri ());
+                }
+            }
+
             if (!reader.has_row_clues || !reader.has_col_clues) {
                 Gnonograms.Utils.show_error_dialog (_("Cannot load"), reader.err_msg, window);
                 return;

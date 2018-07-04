@@ -341,13 +341,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid {
                         return false;
                     });
                 } else {
-                    set_icon_tooltip_text (Gtk.EntryIconPosition.SECONDARY, null);
                     secondary_icon_name = "";
                 }
             });
 
             notify["text"].connect (() => {
-                valid = check_parse () && check_block_extent ();
+                valid = text == "" || text == "0" || (check_parse () && check_block_extent ());
             });
 
             key_press_event.connect (on_key_press_event);

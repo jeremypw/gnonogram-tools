@@ -10,6 +10,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     private Gtk.Button save_button;
     private Gtk.Button load_button;
     private Gtk.Button clear_button;
+    private Gtk.Button solve_button;
     private Gtk.Entry name_entry;
 
     private GLib.Settings? settings = null;
@@ -17,6 +18,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
     private string? temporary_game_path = null;
     private string current_game_path = "";
+
+    private Gnonograms.Difficulty grade = Gnonograms.Difficulty.UNDEFINED;
 
     private bool valid {
         get {
@@ -102,11 +105,13 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         load_button = new Gtk.Button.with_label (_("Load"));
         save_button = new Gtk.Button.with_label (_("Save"));
         clear_button = new Gtk.Button.with_label (_("New Puzzle"));
+        solve_button = new Gtk.Button.with_label (_("Solve"));
         clear_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
 
         bbox.add (load_button);
         bbox.add (save_button);
         bbox.add (clear_button);
+        bbox.add (solve_button);
 
         attach (name_grid, 0, 0, 2, 1);
         attach (rows_grid, 0, 1, 1, 1);
@@ -116,13 +121,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         attach (bbox, 0, 3, 2, 1);
 
         rows_setting.value_changed.connect ((val) => {
-            row_entry.update_n_entries ((int)val);
-            col_entry.size = val;
+            on_dimension_changed (row_entry, col_entry, val);
         });
 
         cols_setting.value_changed.connect ((val) => {
-            col_entry.update_n_entries ((int)val);
-            row_entry.size = val;
+            on_dimension_changed (col_entry, row_entry, val);
         });
 
         save_button.clicked.connect (() => {save_game ();});
@@ -131,6 +134,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             clear_game ();
             clear_current_game_path ();
         });
+
+        solve_button.clicked.connect (solve_game);
 
         realize.connect (() => {
             row_entry.update_n_entries ((int)(rows_setting.get_value ()));
@@ -181,6 +186,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
 
         return false;
+    }
+
+    private void on_dimension_changed (ClueEntryGrid changed, ClueEntryGrid other, uint new_val) {
+        changed.update_n_entries ((int)new_val);
+        other.size = new_val;
+        grade = Gnonograms.Difficulty.UNDEFINED;
     }
 
     private bool check_totals () {
@@ -301,10 +312,41 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
+    private void solve_game () {
+        if (!valid) {
+            Gnonograms.Utils.show_error_dialog (_("Cannot solve"), _("The clues are invalid"), window);
+            grade = Gnonograms.Difficulty.UNDEFINED;
+            return;
+        }
+
+        var dim = Gnonograms.Dimensions ();
+        dim.height = rows_setting.get_value ();
+        dim.width = cols_setting.get_value ();
+        var solver = new Gnonograms.Solver (dim);
+        solver.configure_from_grade (Gnonograms.Difficulty.COMPUTER);
+        var diff = solver.solve_clues (row_entry.get_clues (), col_entry.get_clues ());
+
+        string msg = "";
+        if (solver.state.solved ()) {
+            if (solver.state == Gnonograms.SolverState.AMBIGUOUS) {
+                msg = _("More than one solution found");
+            } else {
+                msg = _("Solution found. %s").printf (diff.to_string ());
+            }
+        } else {
+            msg = _("No solution found");
+        }
+
+        Gnonograms.Utils.show_dlg (msg, Gtk.MessageType.INFO, null, window);
+
+        grade = diff;
+    }
+
     private void clear_game () {
         row_entry.clear ();
         col_entry.clear ();
         name_entry.text = "";
+        grade = Gnonograms.Difficulty.UNDEFINED;
     }
 
     private void clear_current_game_path () {
@@ -441,7 +483,17 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     private class ClueEntry : Gtk.Entry {
         public uint size {get; set; default = 10;} /* Size of range connected to clue */
         public bool valid {get; set; default = true;}
-        public uint extent {get; set; default = 0;}
+        public uint extent {
+            get {
+                var blocks = Gnonograms.Utils.block_array_from_clue (text);
+                int e = 0;
+                foreach (int b in blocks) {
+                    e += b;
+                }
+
+                return (uint)e;
+            }
+        }
 
         private string err_message = "";
 
@@ -476,7 +528,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
 
         private bool check_block_extent () {
-            extent = Gnonograms.Utils.blockextent_from_clue (text);
             bool res = extent <= size;
             err_message = res ? "" : _("Block extent (%i) exceeds available space (%u)").printf (extent, size);
             return res;

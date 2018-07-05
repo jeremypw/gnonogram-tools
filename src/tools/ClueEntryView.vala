@@ -19,7 +19,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     private string? temporary_game_path = null;
     private string current_game_path = "";
 
-    private Gnonograms.Difficulty grade = Gnonograms.Difficulty.UNDEFINED;
+    public Gnonograms.Difficulty grade {get; private set; default = Gnonograms.Difficulty.UNDEFINED;}
 
     private bool valid {
         get {
@@ -92,6 +92,16 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         name_grid.add (name_label);
         name_grid.add (name_entry);
 
+        var grade_label = new Gtk.Label ("");
+
+        notify["grade"].connect (() => {
+            if (grade == Gnonograms.Difficulty.UNDEFINED) {
+                grade_label.label = "";
+            } else {
+                grade_label.label = grade.to_string ();
+            }
+        });
+
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
 
@@ -113,7 +123,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         bbox.add (clear_button);
         bbox.add (solve_button);
 
-        attach (name_grid, 0, 0, 2, 1);
+        attach (name_grid, 0, 0, 1, 1);
+        attach (grade_label, 1, 0, 1, 1);
         attach (rows_grid, 0, 1, 1, 1);
         attach (cols_grid, 1, 1, 1, 1);
         attach (row_entry, 0, 2, 1, 1);
@@ -231,6 +242,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                                                     col_clues,
                                                     null, false);
             filewriter.is_readonly = false;
+            filewriter.difficulty = grade;
             filewriter.write_game_file ();
         } catch (IOError e) {
             if (!(e is IOError.CANCELLED)) {
@@ -290,6 +302,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 name_entry.text = reader.name;
             }
 
+            grade = reader.difficulty;
+
             /* Must do after clearing game */
             if (game_path != temporary_game_path && reader.game_file != null) {
                 var dir = reader.game_file.get_parent ();
@@ -327,17 +341,10 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         var diff = solver.solve_clues (row_entry.get_clues (), col_entry.get_clues ());
 
         string msg = "";
-        if (solver.state.solved ()) {
-            if (solver.state == Gnonograms.SolverState.AMBIGUOUS) {
-                msg = _("More than one solution found");
-            } else {
-                msg = _("Solution found. %s").printf (diff.to_string ());
-            }
-        } else {
+        if (!solver.state.solved ()) {
             msg = _("No solution found");
+            Gnonograms.Utils.show_dlg (msg, Gtk.MessageType.INFO, null, window);
         }
-
-        Gnonograms.Utils.show_dlg (msg, Gtk.MessageType.INFO, null, window);
 
         grade = diff;
     }

@@ -43,11 +43,10 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     }
 
     private Gnonograms.Model model;
+    private Gnonograms.CellGrid solution_grid;
     public string description {get; set construct;}
 
     construct {
-        model = new Gnonograms.Model ();
-
         description = _("Clue Entry");
 
         string data_home_folder_current = Path.build_path (Path.DIR_SEPARATOR_S,
@@ -114,6 +113,17 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         row_entry = new ClueEntryGrid ();
         col_entry = new ClueEntryGrid ();
 
+        model = new Gnonograms.Model ();
+        solution_grid = new Gnonograms.CellGrid (model);
+
+        solution_grid.vexpand = true;
+        solution_grid.hexpand = false;
+        solution_grid.draw_only = true;
+        solution_grid.visible = false;
+        solution_grid.no_show_all = true;
+
+        model.game_state = Gnonograms.GameState.SETTING;
+
         var bbox = new Gtk.ButtonBox (Gtk.Orientation.HORIZONTAL);
         load_button = new Gtk.Button.with_label (_("Load"));
         save_button = new Gtk.Button.with_label (_("Save"));
@@ -132,7 +142,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         attach (cols_grid, 1, 1, 1, 1);
         attach (row_entry, 0, 2, 1, 1);
         attach (col_entry, 1, 2, 1, 1);
-        attach (bbox, 0, 3, 2, 1);
+        attach (solution_grid, 1, 3, 1, 1);
+        attach (bbox, 0, 4, 2, 1);
 
         rows_setting.value_changed.connect ((val) => {
             on_dimension_changed (row_entry, col_entry, val);
@@ -140,6 +151,14 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         cols_setting.value_changed.connect ((val) => {
             on_dimension_changed (col_entry, row_entry, val);
+        });
+
+        row_entry.changed.connect (() => {
+            clear_model ();
+        });
+
+        col_entry.changed.connect (() => {
+            clear_model ();
         });
 
         save_button.clicked.connect (() => {save_game ();});
@@ -206,13 +225,18 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         changed.update_n_entries ((int)new_val);
         other.size = new_val;
         grade = Gnonograms.Difficulty.UNDEFINED;
-        model.dimensions = {col_entry.size, row_entry.size};
+        model.dimensions = { col_entry.size, row_entry.size };
+        clear_model ();
+    }
+
+    private void clear_model () {
+        model.clear ();
+        solution_grid.visible = false;
     }
 
     private bool check_totals () {
         var row_total = row_entry.get_total ();
         var col_total = col_entry.get_total ();
-
         return row_total == col_total;
     }
 
@@ -240,8 +264,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                                                     null);
             filewriter.is_readonly = false;
             filewriter.difficulty = grade;
-            filewriter.solution = model.copy_solution_data ();
 
+            row_entry.count_errors ();
+            col_entry.count_errors ();
+
+            filewriter.solution = model.copy_solution_data ();
             filewriter.write_game_file ();
         } catch (IOError e) {
             if (!(e is IOError.CANCELLED)) {
@@ -264,7 +291,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
     private void load_game (string? game_path = null) {
         Gnonograms.Filereader? reader = null;
-
         try {
             File? game_file = null;
             if (game_path != null) {
@@ -297,10 +323,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
             model.dimensions = { col_clues.length, row_clues.length };
 
-            if (reader.has_solution) {
+            if (valid && reader.has_solution) {
                 model.set_solution_data_from_string_array (reader.solution);
+                solution_grid.visible = true;
             } else {
-                model.clear ();
+                clear_model ();
             }
 
             if (reader.name == Gnonograms.UNTITLED_NAME) {
@@ -349,11 +376,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         string msg = "";
         if (!solver.state.solved ()) {
-            model.clear ();
+            clear_model ();
             msg = _("No solution found");
             Gnonograms.Utils.show_dlg (msg, Gtk.MessageType.INFO, null, window);
         } else {
             model.set_solution_from_array (solver.solution);
+            solution_grid.visible = true;
         }
 
         grade = diff;
@@ -364,6 +392,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         col_entry.clear ();
         name_entry.text = "";
         grade = Gnonograms.Difficulty.UNDEFINED;
+        clear_model ();
     }
 
     private void clear_current_game_path () {
@@ -378,6 +407,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         public uint size {get; set;}
         public uint errors {get; private set; default = 0;}
+        private int last_total = -1;
+
+        public signal void changed ();
 
         construct {
             grid = new Gtk.Grid ();
@@ -412,6 +444,17 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                         }
                     });
 
+                    entry.focus_out_event.connect (() => {
+                        if (get_total () != last_total) {
+                            if (last_total >= 0) {
+                                changed ();
+                            }
+
+                            last_total = (int)get_total ();
+                        }
+                        return false;
+                    });
+
                     entry.size = size;
                     entry.notify["valid"].connect (count_errors);
                 }
@@ -436,7 +479,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             }
         }
 
-        private void count_errors () {
+        public void count_errors () {
             uint _errors = 0;
             for (int i = 0; i < n_entries; i++) {
                 var entry = (ClueEntry)(grid.get_child_at (1, i));
@@ -475,6 +518,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 var entry = (ClueEntry)(grid.get_child_at (1, i));
                 entry.text = clues[i];
             }
+
+            count_errors ();
+            last_total = (int)get_total ();
         }
 
         public void clear () {

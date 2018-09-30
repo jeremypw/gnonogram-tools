@@ -42,9 +42,12 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
+    private Gnonograms.Model model;
     public string description {get; set construct;}
 
     construct {
+        model = new Gnonograms.Model ();
+
         description = _("Clue Entry");
 
         string data_home_folder_current = Path.build_path (Path.DIR_SEPARATOR_S,
@@ -203,6 +206,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         changed.update_n_entries ((int)new_val);
         other.size = new_val;
         grade = Gnonograms.Difficulty.UNDEFINED;
+        model.dimensions = {col_entry.size, row_entry.size};
     }
 
     private bool check_totals () {
@@ -236,6 +240,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                                                     null);
             filewriter.is_readonly = false;
             filewriter.difficulty = grade;
+            filewriter.solution = model.copy_solution_data ();
+
             filewriter.write_game_file ();
         } catch (IOError e) {
             if (!(e is IOError.CANCELLED)) {
@@ -289,6 +295,14 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             row_entry.set_clues (row_clues);
             col_entry.set_clues (col_clues);
 
+            model.dimensions = { col_clues.length, row_clues.length };
+
+            if (reader.has_solution) {
+                model.set_solution_data_from_string_array (reader.solution);
+            } else {
+                model.clear ();
+            }
+
             if (reader.name == Gnonograms.UNTITLED_NAME) {
                 name_entry.text = "";
             } else {
@@ -335,8 +349,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         string msg = "";
         if (!solver.state.solved ()) {
+            model.clear ();
             msg = _("No solution found");
             Gnonograms.Utils.show_dlg (msg, Gtk.MessageType.INFO, null, window);
+        } else {
+            model.set_solution_from_array (solver.solution);
         }
 
         grade = diff;

@@ -43,7 +43,6 @@ meson.add_install_script('meson/post_install.py')
 uninstall_data = configuration_data()
 uninstall_data.set('schema_install_dir', join_paths(get_option('prefix'), get_option('datadir'), 'glib-2.0', 'schemas'))
 uninstall_data.set('schema_path', schema_path)
-uninstall_data.set('tmp_dir_path', tmp_dir_path)
 uninstall_data.set('desktop_dir_path', join_paths(get_option('prefix'), get_option('datadir'), 'applications'))
 
 configure_file (

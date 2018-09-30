@@ -5,9 +5,6 @@ import subprocess
 
 schemadir = "@schema_install_dir@"
 schemapath = "@schema_path@"
-tmpdirpath = "@tmp_dir_path@"
-icondir = "@icon_dir_path@"
-mimedir = "@mime_dir_path@"
 desktopdir = "@desktop_dir_path@"
 
 print('Compiling gsettings schemas...' + schemadir)

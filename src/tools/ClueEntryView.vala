@@ -181,7 +181,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     }
 
     public bool quit () {
-        settings.set_uint ("rows",  rows_setting.get_value ()); 
+        settings.set_uint ("rows",  rows_setting.get_value ());
         settings.set_uint ("columns",  cols_setting.get_value ());
 
 
@@ -212,16 +212,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         return row_total == col_total;
     }
 
-    private bool check_clear () {
-        var row_total = row_entry.get_total ();
-        var col_total = col_entry.get_total ();
-
-        return row_total + col_total == 0;
-    }
-
     private void save_game (string? path = null) {
         if (path == null && !valid && !confirm_save_invalid ()) {
-            return; 
+            return;
         }
 
         string game_name = name_entry.text != "" ? name_entry.text : Gnonograms.UNTITLED_NAME;
@@ -240,7 +233,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                                                     dim,
                                                     row_clues,
                                                     col_clues,
-                                                    null, false);
+                                                    null);
             filewriter.is_readonly = false;
             filewriter.difficulty = grade;
             filewriter.write_game_file ();
@@ -280,7 +273,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 load_dir_path = settings.get_string ("game-dir");
             }
 
-            reader = new Gnonograms.Filereader (window, load_dir_path, game_file, true);
+            reader = new Gnonograms.Filereader (window, load_dir_path, game_file);
 
             if (!reader.has_row_clues || !reader.has_col_clues) {
                 Gnonograms.Utils.show_error_dialog (_("Cannot load"), reader.err_msg, window);
@@ -536,7 +529,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         private bool check_block_extent () {
             bool res = extent <= size;
-            err_message = res ? "" : _("Block extent (%i) exceeds available space (%u)").printf (extent, size);
+            err_message = res ? "" : _("Block extent (%u) exceeds available space (%u)").printf (extent, size);
             return res;
         }
 

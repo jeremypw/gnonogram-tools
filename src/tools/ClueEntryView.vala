@@ -44,6 +44,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
     private Gnonograms.Model model;
     private Gnonograms.CellGrid solution_grid;
+    private Gtk.AspectFrame solution_frame;
     public string description {get; set construct;}
 
     construct {
@@ -122,6 +123,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         solution_grid.visible = false;
         solution_grid.no_show_all = true;
 
+        solution_frame = new Gtk.AspectFrame (null, 0.5f, 0.5f, 1.0f, false);
+        solution_frame.add (solution_grid);
+
         model.game_state = Gnonograms.GameState.SETTING;
 
         var bbox = new Gtk.ButtonBox (Gtk.Orientation.HORIZONTAL);
@@ -142,7 +146,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         attach (cols_grid, 1, 1, 1, 1);
         attach (row_entry, 0, 2, 1, 1);
         attach (col_entry, 1, 2, 1, 1);
-        attach (solution_grid, 1, 3, 1, 1);
+        attach (solution_frame, 0, 3, 2, 1);
         attach (bbox, 0, 4, 2, 1);
 
         rows_setting.value_changed.connect ((val) => {
@@ -225,8 +229,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         changed.update_n_entries ((int)new_val);
         other.size = new_val;
         grade = Gnonograms.Difficulty.UNDEFINED;
-        model.dimensions = { col_entry.size, row_entry.size };
         clear_model ();
+        model.dimensions = { cols_setting.get_value (), rows_setting.get_value () };
+        solution_frame.ratio =  (float)(model.cols) / (float)(model.rows);
     }
 
     private void clear_model () {

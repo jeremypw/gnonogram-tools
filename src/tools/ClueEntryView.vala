@@ -51,34 +51,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     construct {
         description = _("Clue Entry");
 
-        string data_home_folder_current = Path.build_path (Path.DIR_SEPARATOR_S,
-                                                           Environment.get_user_data_dir (),
-                                                           "gnonogram-tools",
-                                                           "unsaved"
-                                                           );
-        File file;
-        try {
-            file = File.new_for_path (data_home_folder_current);
-            file.make_directory_with_parents (null);
-        } catch (GLib.Error e) {
-            if (!(e is IOError.EXISTS)) {
-                warning ("Could not make %s - %s",file.get_uri (), e.message);
-            }
-        }
-
-        temporary_game_path = Path.build_path (Path.DIR_SEPARATOR_S, data_home_folder_current,
-                                               UNSAVED_FILENAME);
-
-        var schema_source = GLib.SettingsSchemaSource.get_default ();
-        if (schema_source.lookup (EDITOR_SETTINGS_SCHEMA, true) != null &&
-            schema_source.lookup (EDITOR_STATE_SCHEMA, true) != null) {
-
-            settings = new Settings (EDITOR_SETTINGS_SCHEMA);
-            saved_state = new Settings (EDITOR_STATE_SCHEMA);
-        } else {
-            warning ("No clue editor schemas found - will not save settings or state");
-        }
-
         column_spacing = 12;
         row_spacing = 6;
         margin = 6;
@@ -97,14 +69,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         name_grid.add (name_entry);
 
         var grade_label = new Gtk.Label ("");
-
-        notify["grade"].connect (() => {
-            if (grade == Gnonograms.Difficulty.UNDEFINED) {
-                grade_label.label = "";
-            } else {
-                grade_label.label = grade.to_string ();
-            }
-        });
 
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
@@ -154,6 +118,14 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         attach (col_entry, 1, 2, 1, 1);
         attach (bbox, 0, 4, 2, 1);
 
+        notify["grade"].connect (() => {
+            if (grade == Gnonograms.Difficulty.UNDEFINED) {
+                grade_label.label = "";
+            } else {
+                grade_label.label = grade.to_string ();
+            }
+        });
+
         rows_setting.value_changed.connect ((val) => {
             on_dimension_changed (row_entry, col_entry, val);
         });
@@ -202,6 +174,34 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     }
 
     private void restore_settings () {
+        string data_home_folder_current = Path.build_path (Path.DIR_SEPARATOR_S,
+                                                           Environment.get_user_data_dir (),
+                                                           "gnonogram-tools",
+                                                           "unsaved"
+                                                           );
+        File file;
+        try {
+            file = File.new_for_path (data_home_folder_current);
+            file.make_directory_with_parents (null);
+        } catch (GLib.Error e) {
+            if (!(e is IOError.EXISTS)) {
+                warning ("Could not make %s - %s",file.get_uri (), e.message);
+            }
+        }
+
+        temporary_game_path = Path.build_path (Path.DIR_SEPARATOR_S, data_home_folder_current,
+                                               UNSAVED_FILENAME);
+
+        var schema_source = GLib.SettingsSchemaSource.get_default ();
+        if (schema_source.lookup (EDITOR_SETTINGS_SCHEMA, true) != null &&
+            schema_source.lookup (EDITOR_STATE_SCHEMA, true) != null) {
+
+            settings = new Settings (EDITOR_SETTINGS_SCHEMA);
+            saved_state = new Settings (EDITOR_STATE_SCHEMA);
+        } else {
+            warning ("No clue editor schemas found - will not save settings or state");
+        }
+
         uint rows = 10;
         uint cols = 10;
 

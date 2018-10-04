@@ -137,7 +137,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         solution_popover = new Gtk.Popover (null);
         solution_popover.add (solution_frame);
-        solution_popover.set_constrain_to (Gtk.PopoverConstraint.WINDOW);
         solve_button.set_popover (solution_popover);
 
         clear_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
@@ -185,8 +184,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         realize.connect (() => {
             row_entry.update_n_entries ((int)(rows_setting.get_value ()));
             col_entry.update_n_entries ((int)(cols_setting.get_value ()));
-            set_solution_grid_size ();
         });
+
+        size_allocate.connect (set_solution_grid_size);
 
         restore_settings ();
     }

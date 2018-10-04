@@ -137,6 +137,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         solution_popover = new Gtk.Popover (null);
         solution_popover.add (solution_frame);
+        solution_popover.set_constrain_to (Gtk.PopoverConstraint.WINDOW);
         solve_button.set_popover (solution_popover);
 
         clear_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
@@ -184,9 +185,20 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         realize.connect (() => {
             row_entry.update_n_entries ((int)(rows_setting.get_value ()));
             col_entry.update_n_entries ((int)(cols_setting.get_value ()));
+            set_solution_grid_size ();
         });
 
         restore_settings ();
+    }
+
+    private void set_solution_grid_size () {
+        if (solution_frame.ratio > 1) {
+            var w = this.get_allocated_width ();
+            solution_grid.set_size_request (w, (int) (w / solution_frame.ratio));
+        } else {
+            var h = this.get_allocated_height ();
+            solution_grid.set_size_request ((int)(h * solution_frame.ratio), h);
+        }
     }
 
     private void restore_settings () {
@@ -241,7 +253,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         var rows = rows_setting.get_value ();
         model.dimensions = { cols, rows };
         solution_frame.ratio =  (float)(cols) / (float)(rows);
-        solution_popover.set_size_request ((int)(cols * 24), (int)(rows * 24));
+        set_solution_grid_size ();
     }
 
     private void clear_model () {

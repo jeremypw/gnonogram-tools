@@ -37,7 +37,7 @@ public class View : Gtk.ApplicationWindow {
         header_bar.set_show_close_button (true);
 
         main_stack = new Gtk.Stack ();
-        var clue_entry = new ClueEntryView ();
+        var clue_entry = new ClueEntryView (this);
         var tool2 = new DummyTool ("Hello 2", "Convert Image");
         var tool3 = new DummyTool ("Hello 3", "Print gnonogram");
 

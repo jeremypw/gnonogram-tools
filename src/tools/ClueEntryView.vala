@@ -19,8 +19,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     private string? temporary_game_path = null;
     private string current_game_path = "";
 
-    public Gnonograms.Difficulty grade {get; private set; default = Gnonograms.Difficulty.UNDEFINED;}
-
     private bool valid {
         get {
             if (row_entry == null) {
@@ -31,22 +29,10 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
-    private Gtk.Window? window {
-        get {
-            var w = get_toplevel ();
-            if (w is Gtk.Window) {
-                return (Gtk.Window)w;
-            }
-
-            return null;
-        }
-    }
-
     private Gnonograms.Model model;
-    private Gnonograms.CellGrid solution_grid;
-    private Gtk.AspectFrame solution_frame;
-    private Gtk.Popover solution_popover;
+    private SolutionPopover solution_popover;
     public string description {get; set construct;}
+    public Gtk.Window window { get; construct; }
 
     construct {
         description = _("Clue Entry");
@@ -68,8 +54,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         name_grid.add (name_label);
         name_grid.add (name_entry);
 
-        var grade_label = new Gtk.Label ("");
-
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
 
@@ -88,19 +72,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         solve_button.label = _("Solve");
 
         model = new Gnonograms.Model ();
-        solution_grid = new Gnonograms.CellGrid (model);
-        model.game_state = Gnonograms.GameState.SETTING;
-
-        solution_grid.draw_only = true;
-        solution_grid.visible = true;
-        solution_grid.margin = 12;
-
-        solution_frame = new Gtk.AspectFrame (null, 0.5f, 0.5f, 1.0f, false);
-        solution_frame.add (solution_grid);
-        solution_frame.show_all ();
-
-        solution_popover = new Gtk.Popover (null);
-        solution_popover.add (solution_frame);
+        solution_popover = new SolutionPopover (model, this);
+        solution_popover.set_position (Gtk.PositionType.TOP);
         solve_button.set_popover (solution_popover);
 
         clear_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
@@ -111,20 +84,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         bbox.add (solve_button);
 
         attach (name_grid, 0, 0, 1, 1);
-        attach (grade_label, 1, 0, 1, 1);
         attach (rows_grid, 0, 1, 1, 1);
         attach (cols_grid, 1, 1, 1, 1);
         attach (row_entry, 0, 2, 1, 1);
         attach (col_entry, 1, 2, 1, 1);
         attach (bbox, 0, 4, 2, 1);
-
-        notify["grade"].connect (() => {
-            if (grade == Gnonograms.Difficulty.UNDEFINED) {
-                grade_label.label = "";
-            } else {
-                grade_label.label = grade.to_string ();
-            }
-        });
 
         rows_setting.value_changed.connect ((val) => {
             on_dimension_changed (row_entry, col_entry, val);
@@ -142,15 +106,16 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             clear_model ();
         });
 
-        save_button.clicked.connect (() => {save_game ();});
+        save_button.clicked.connect (() => {save_game (null, true);});
         load_button.clicked.connect (() => {load_game ();});
         clear_button.clicked.connect (() => {
             clear_game ();
             clear_current_game_path ();
         });
 
-        solve_button.clicked.connect ( () => {
-            solve_game ();
+        solve_button.button_press_event.connect ( () => {
+            /* Only show solution popover of solved game successfully */
+            return !solve_game ();
         });
 
         realize.connect (() => {
@@ -158,19 +123,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             col_entry.update_n_entries ((int)(cols_setting.get_value ()));
         });
 
-        size_allocate.connect (set_solution_grid_size);
-
         restore_settings ();
     }
 
-    private void set_solution_grid_size () {
-        if (solution_frame.ratio > 1) {
-            var w = this.get_allocated_width ();
-            solution_grid.set_size_request (w, (int) (w / solution_frame.ratio));
-        } else {
-            var h = this.get_allocated_height ();
-            solution_grid.set_size_request ((int)(h * solution_frame.ratio), h);
-        }
+    public ClueEntryView (Gtk.Window window) {
+        Object (window: window);
     }
 
     private void restore_settings () {
@@ -236,8 +193,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 current_game.@delete ();
             } catch (GLib.Error e) {
             } finally {
-                /* Save solution and current state */
-                save_game (temporary_game_path);
+                /* Save current state but not solution as may not be valid */
+                save_game (temporary_game_path, false);
             }
         }
 
@@ -247,13 +204,9 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     private void on_dimension_changed (ClueEntryGrid changed, ClueEntryGrid other, uint new_val) {
         changed.update_n_entries ((int)new_val);
         other.size = new_val;
-        grade = Gnonograms.Difficulty.UNDEFINED;
-        clear_model ();
         var cols = cols_setting.get_value ();
         var rows = rows_setting.get_value ();
         model.dimensions = { cols, rows };
-        solution_frame.ratio =  (float)(cols) / (float)(rows);
-        set_solution_grid_size ();
     }
 
     private void clear_model () {
@@ -266,8 +219,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         return row_total == col_total;
     }
 
-    private void save_game (string? path = null) {
-        if (path == null && !valid && !confirm_save_invalid ()) {
+    private void save_game (string? path = null, bool save_solution = false) {
+        if (!valid) {
             return;
         }
 
@@ -283,36 +236,29 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
 
         try {
             filewriter = new Gnonograms.Filewriter (window,
-                                                    null, path, game_name,
                                                     dim,
                                                     row_clues,
                                                     col_clues,
                                                     null);
             filewriter.is_readonly = false;
-            filewriter.difficulty = grade;
+            filewriter.difficulty = solution_popover.grade;
 
             row_entry.count_errors ();
             col_entry.count_errors ();
 
-            filewriter.solution = null;
-            filewriter.write_game_file ();
+            if (save_solution && valid && solve_game ()) {
+                filewriter.solution = model.copy_solution_data ();
+            } else {
+                filewriter.solution = null;
+            }
+
+            filewriter.write_game_file (null, null, game_name);
         } catch (IOError e) {
             if (!(e is IOError.CANCELLED)) {
                 var basename = Path.get_basename (filewriter.game_path);
                 Gnonograms.Utils.show_error_dialog (_("Unable to save %s").printf (basename), e.message, window);
             }
         }
-    }
-
-    private bool confirm_save_invalid () {
-        string secondary_text = "";
-        if (row_entry.errors + col_entry.errors > 0) {
-            secondary_text = _("There is one or more invalid clues");
-        } else if (!check_totals ()) {
-            secondary_text = _("Total row blocks not equal to total column blocks");
-        }
-
-        return Gnonograms.Utils.show_confirm_dialog (_("Save an invalid game?"), secondary_text, window);
     }
 
     private void load_game (string? game_path = null) {
@@ -355,7 +301,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 name_entry.text = reader.name;
             }
 
-            grade = reader.difficulty;
+            solution_popover.grade = reader.difficulty;
 
             /* Must do after clearing game */
             if (game_path != temporary_game_path && reader.game_file != null) {
@@ -379,11 +325,11 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
-    private void solve_game () {
+    private bool solve_game () {
         if (!valid) {
             Gnonograms.Utils.show_error_dialog (_("Cannot solve"), _("The clues are invalid"), window);
-            grade = Gnonograms.Difficulty.UNDEFINED;
-            return;
+            solution_popover.grade = Gnonograms.Difficulty.UNDEFINED;
+            return false;
         }
 
         var dim = Gnonograms.Dimensions ();
@@ -393,23 +339,26 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         solver.configure_from_grade (Gnonograms.Difficulty.COMPUTER);
         var diff = solver.solve_clues (row_entry.get_clues (), col_entry.get_clues ());
 
+        solution_popover.grade = diff;
+
         string msg = "";
         if (!solver.state.solved ()) {
             clear_model ();
             msg = _("No solution found");
             Gnonograms.Utils.show_dlg (msg, Gtk.MessageType.INFO, null, window);
+            return false;
         } else {
             model.set_solution_from_array (solver.solution);
+            return true;
         }
 
-        grade = diff;
+
     }
 
     private void clear_game () {
         row_entry.clear ();
         col_entry.clear ();
         name_entry.text = "";
-        grade = Gnonograms.Difficulty.UNDEFINED;
         clear_model ();
     }
 
@@ -638,6 +587,70 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 return true;
             } else {
                 return false;
+            }
+        }
+    }
+
+    private class SolutionPopover : Gtk.Popover {
+        public Gnonograms.Model model { get; construct; }
+        public Gtk.Widget view {get; construct; }
+        public Gnonograms.Difficulty grade { get; set; default = Gnonograms.Difficulty.UNDEFINED;}
+
+        private Gnonograms.CellGrid solution_grid;
+        private Gtk.AspectFrame solution_frame;
+        private Gtk.Label grade_label;
+
+        construct {
+            var grid = new Gtk.Grid ();
+            grid.orientation = Gtk.Orientation.VERTICAL;
+
+            grade_label = new Gtk.Label ("");
+            grade_label.no_show_all = true;
+            grade_label.get_style_context ().add_class (Granite.STYLE_CLASS_H2_LABEL);
+
+            grid.add (grade_label);
+
+            solution_grid = new Gnonograms.CellGrid (model);
+            model.game_state = Gnonograms.GameState.SETTING;
+            solution_grid.draw_only = true;
+            solution_grid.visible = true;
+            solution_grid.margin = 12;
+
+            solution_frame = new Gtk.AspectFrame (null, 0.5f, 0.5f, 1.0f, false);
+            solution_frame.add (solution_grid);
+
+            grid.add (solution_frame);
+            add (grid);
+            grid.show_all ();
+
+            model.notify["dimensions"].connect (() => {
+                solution_frame.ratio = (float)(model.cols) / (float)(model.rows);
+                set_solution_grid_size ();
+            });
+
+            notify["grade"].connect (() => {
+                grade_label.label = grade.to_string ();
+                grade_label.visible = grade != Gnonograms.Difficulty.UNDEFINED;
+                set_solution_grid_size ();
+            });
+
+            view.size_allocate.connect (set_solution_grid_size);
+        }
+
+        public SolutionPopover (Gnonograms.Model model, Gtk.Widget view) {
+            Object (relative_to: view,
+                    model: model,
+                    view: view);
+        }
+
+        /* BLACK MAGIC! Find more elegant way (PopoverConstraint does not seems to work) */
+        private void set_solution_grid_size () {
+            if (solution_frame.ratio > 1) {
+                var w = view.get_allocated_width ();
+                solution_grid.set_size_request (w, (int) (w / solution_frame.ratio));
+            } else {
+                var h = view.get_allocated_height () - (grade_label.visible ? 48 : 0);
+                solution_grid.set_size_request ((int)(h * solution_frame.ratio), h);
             }
         }
     }

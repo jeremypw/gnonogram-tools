@@ -246,7 +246,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             row_entry.count_errors ();
             col_entry.count_errors ();
 
-            if (save_solution && valid && solve_game ()) {
+            if (save_solution && valid && solve_game (true)) {
                 filewriter.solution = model.copy_solution_data ();
             } else {
                 filewriter.solution = null;
@@ -325,7 +325,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
-    private bool solve_game () {
+    private bool solve_game (bool silent = false) {
         if (!valid) {
             Gnonograms.Utils.show_error_dialog (_("Cannot solve"), _("The clues are invalid"), window);
             solution_popover.grade = Gnonograms.Difficulty.UNDEFINED;
@@ -344,8 +344,10 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         string msg = "";
         if (!solver.state.solved ()) {
             clear_model ();
-            msg = _("No solution found");
-            Gnonograms.Utils.show_dlg (msg, Gtk.MessageType.INFO, null, window);
+            if (!silent) {
+                msg = _("No solution found");
+                Gnonograms.Utils.show_dlg (msg, Gtk.MessageType.INFO, null, window);
+            }
             return false;
         } else {
             model.set_solution_from_array (solver.solution);

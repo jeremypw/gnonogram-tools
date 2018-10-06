@@ -183,8 +183,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     }
 
     public bool quit () {
-        settings.set_uint ("rows",  rows_setting.get_value ());
-        settings.set_uint ("columns",  cols_setting.get_value ());
+        settings.set_uint ("rows", rows_setting.get_value ());
+        settings.set_uint ("columns", cols_setting.get_value ());
 
 
         if (temporary_game_path != null && current_game_path == "") {
@@ -370,7 +370,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
-    private class ClueEntryGrid : Gtk.ScrolledWindow  {
+    private class ClueEntryGrid : Gtk.ScrolledWindow {
         private Gtk.Grid grid;
         private int n_entries = 0;
 

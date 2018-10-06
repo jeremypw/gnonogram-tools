@@ -106,8 +106,14 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             clear_model ();
         });
 
-        save_button.clicked.connect (() => {save_game (null, true);});
-        load_button.clicked.connect (() => {load_game ();});
+        save_button.clicked.connect (() => {
+            save_game (null, true);
+        });
+
+        load_button.clicked.connect (() => {
+            load_game ();
+        });
+
         clear_button.clicked.connect (() => {
             clear_game ();
             clear_current_game_path ();
@@ -320,6 +326,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 if (reader != null && reader.game_file != null) {
                     basename = reader.game_file.get_basename ();
                 }
+
                 Gnonograms.Utils.show_error_dialog (_("Unable to load %s").printf (basename), e.message, window);
             }
         }
@@ -353,8 +360,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             model.set_solution_from_array (solver.solution);
             return true;
         }
-
-
     }
 
     private void clear_game () {

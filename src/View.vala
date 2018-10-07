@@ -38,11 +38,11 @@ public class View : Gtk.ApplicationWindow {
 
         main_stack = new Gtk.Stack ();
         var clue_entry = new ClueEntryView (this);
-        var tool2 = new DummyTool ("Hello 2", "Convert Image");
+        var image_converter = new Img2GnoView (this);
         var tool3 = new DummyTool ("Hello 3", "Print gnonogram");
 
-        main_stack.add_titled (clue_entry, "clue-entry", "Clue Entry");
-        main_stack.add_titled (tool2, "img2gno", tool2.description);
+        main_stack.add_titled (clue_entry, "clue-entry", clue_entry.description);
+        main_stack.add_titled (image_converter, "img2gno", image_converter.description);
         main_stack.add_titled (tool3, "printgno", tool3.description);
 
         var stack_sidebar = new Gtk.StackSidebar ();
@@ -60,12 +60,8 @@ public class View : Gtk.ApplicationWindow {
     }
 
     public bool quit () {
-        bool stop = false;
-        foreach (Gtk.Widget w in main_stack.get_children ()) {
-            stop = ((GnonogramTools.ToolInterface)w).quit () || stop;
-        }
-
-        return stop;
+        /* Children should save state (if necessary) when no visible child */
+        return ((ToolInterface)(main_stack.get_visible_child ())).quit ();
     }
 
     private class DummyTool : Gtk.Label, GnonogramTools.ToolInterface {

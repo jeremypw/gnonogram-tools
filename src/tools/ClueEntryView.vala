@@ -3,6 +3,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     const string EDITOR_STATE_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.saved-state";
     const string UNSAVED_FILENAME = "ClueEditor" + Gnonograms.GAMEFILEEXTENSION;
 
+    private Gtk.Entry name_entry;
     private ClueEntryGrid row_entry;
     private ClueEntryGrid col_entry;
     private Gnonograms.ScaleGrid rows_setting;
@@ -11,7 +12,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     private Gtk.Button load_button;
     private Gtk.Button clear_button;
     private Gtk.MenuButton solve_button;
-    private Gtk.Entry name_entry;
+
 
     private GLib.Settings? settings = null;
     private GLib.Settings? saved_state = null;
@@ -29,8 +30,10 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
+    private bool changed = false;
+
     private Gnonograms.Model model;
-    private SolutionPopover solution_popover;
+    private GnonogramTools.SolutionPopover solution_popover;
     public string description {get; set construct;}
     public Gtk.Window window { get; construct; }
 
@@ -57,8 +60,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
 
-        var rows_grid = new DimensionGrid (rows_setting);
-        var cols_grid = new DimensionGrid (cols_setting);
+        var rows_grid = new GnonogramTools.DimensionGrid (rows_setting);
+        var cols_grid = new GnonogramTools.DimensionGrid (cols_setting);
 
         row_entry = new ClueEntryGrid ();
         col_entry = new ClueEntryGrid ();
@@ -72,7 +75,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         solve_button.label = _("Solve");
 
         model = new Gnonograms.Model ();
-        solution_popover = new SolutionPopover (model, this);
+        solution_popover = new GnonogramTools.SolutionPopover (model, this);
         solution_popover.set_position (Gtk.PositionType.TOP);
         solve_button.set_popover (solution_popover);
 
@@ -188,10 +191,15 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
+    public void hide () {
+        if (changed) {
+            quit ();
+        }
+    }
+
     public bool quit () {
         settings.set_uint ("rows", rows_setting.get_value ());
         settings.set_uint ("columns", cols_setting.get_value ());
-
 
         if (temporary_game_path != null && current_game_path == "") {
             try {
@@ -207,16 +215,18 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         return false;
     }
 
-    private void on_dimension_changed (ClueEntryGrid changed, ClueEntryGrid other, uint new_val) {
-        changed.update_n_entries ((int)new_val);
+    private void on_dimension_changed (ClueEntryGrid changed_entry_grid, ClueEntryGrid other, uint new_val) {
+        changed_entry_grid.update_n_entries ((int)new_val);
         other.size = new_val;
         var cols = cols_setting.get_value ();
         var rows = rows_setting.get_value ();
         model.dimensions = { cols, rows };
+        changed = true;
     }
 
     private void clear_model () {
         model.clear ();
+        changed = true;
     }
 
     private bool check_totals () {
@@ -505,18 +515,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
-    private class DimensionGrid : Gtk.Grid {
-        construct {
-            expand = false;
-            halign = Gtk.Align.CENTER;
-        }
-
-        public DimensionGrid (Gnonograms.AppSetting setting) {
-            add (setting.get_heading ());
-            add (setting.get_chooser ());
-        }
-    }
-
     private class ClueEntry : Gtk.Entry {
         public uint size {get; set; default = 10;} /* Size of range connected to clue */
         public bool valid {get; set; default = true;}
@@ -594,70 +592,6 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
                 return true;
             } else {
                 return false;
-            }
-        }
-    }
-
-    private class SolutionPopover : Gtk.Popover {
-        public Gnonograms.Model model { get; construct; }
-        public Gtk.Widget view {get; construct; }
-        public Gnonograms.Difficulty grade { get; set; default = Gnonograms.Difficulty.UNDEFINED;}
-
-        private Gnonograms.CellGrid solution_grid;
-        private Gtk.AspectFrame solution_frame;
-        private Gtk.Label grade_label;
-
-        construct {
-            var grid = new Gtk.Grid ();
-            grid.orientation = Gtk.Orientation.VERTICAL;
-
-            grade_label = new Gtk.Label ("");
-            grade_label.no_show_all = true;
-            grade_label.get_style_context ().add_class (Granite.STYLE_CLASS_H2_LABEL);
-
-            grid.add (grade_label);
-
-            solution_grid = new Gnonograms.CellGrid (model);
-            model.game_state = Gnonograms.GameState.SETTING;
-            solution_grid.draw_only = true;
-            solution_grid.visible = true;
-            solution_grid.margin = 12;
-
-            solution_frame = new Gtk.AspectFrame (null, 0.5f, 0.5f, 1.0f, false);
-            solution_frame.add (solution_grid);
-
-            grid.add (solution_frame);
-            add (grid);
-            grid.show_all ();
-
-            model.notify["dimensions"].connect (() => {
-                solution_frame.ratio = (float)(model.cols) / (float)(model.rows);
-                set_solution_grid_size ();
-            });
-
-            notify["grade"].connect (() => {
-                grade_label.label = grade.to_string ();
-                grade_label.visible = grade != Gnonograms.Difficulty.UNDEFINED;
-                set_solution_grid_size ();
-            });
-
-            view.size_allocate.connect (set_solution_grid_size);
-        }
-
-        public SolutionPopover (Gnonograms.Model model, Gtk.Widget view) {
-            Object (relative_to: view,
-                    model: model,
-                    view: view);
-        }
-
-        /* BLACK MAGIC! Find more elegant way (PopoverConstraint does not seems to work) */
-        private void set_solution_grid_size () {
-            if (solution_frame.ratio > 1) {
-                var w = view.get_allocated_width ();
-                solution_grid.set_size_request (w, (int) (w / solution_frame.ratio));
-            } else {
-                var h = view.get_allocated_height () - (grade_label.visible ? 48 : 0);
-                solution_grid.set_size_request ((int)(h * solution_frame.ratio), h);
             }
         }
     }

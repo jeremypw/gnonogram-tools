@@ -28,6 +28,9 @@ executable (
     'src/View.vala',
     'src/tools/ToolInterface.vala',
     'src/tools/ClueEntryView.vala',
+    'src/tools/Img2GnoView.vala',
+    'src/tools/widgets/DimensionGrid.vala',
+    'src/tools/widgets/SolutionPopover.vala',
 
     dependencies : [
         dependency ('gtk+-3.0'),

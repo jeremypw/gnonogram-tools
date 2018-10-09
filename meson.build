@@ -29,11 +29,13 @@ executable (
     'src/tools/ToolInterface.vala',
     'src/tools/ClueEntryView.vala',
     'src/tools/Img2GnoView.vala',
-    'src/tools/widgets/DimensionGrid.vala',
+#    'src/tools/widgets/DimensionGrid.vala',
+    'src/tools/widgets/SettingGrid.vala',
     'src/tools/widgets/SolutionPopover.vala',
 
     dependencies : [
         dependency ('gtk+-3.0'),
+        meson.get_compiler('c').find_library('m', required : true),
         dependency ('gee-0.8'),
         dependency ('granite'),
         dependency ('gnonograms-core')

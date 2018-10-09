@@ -36,6 +36,13 @@ public class View : Gtk.ApplicationWindow {
         header_bar.set_has_subtitle (true);
         header_bar.set_show_close_button (true);
 
+        var paned = new Gtk.Paned (Gtk.Orientation.HORIZONTAL);
+        add (paned);
+        set_default_size (900, 600);
+        set_size_request (750, 500);
+        set_titlebar (header_bar);
+        title = _("Gnonogram Tools for Elementary");
+
         main_stack = new Gtk.Stack ();
         var clue_entry = new ClueEntryView (this);
         var image_converter = new Img2GnoView (this);
@@ -48,15 +55,11 @@ public class View : Gtk.ApplicationWindow {
         var stack_sidebar = new Gtk.StackSidebar ();
         stack_sidebar.stack = main_stack;
 
-        var paned = new Gtk.Paned (Gtk.Orientation.HORIZONTAL);
+
         paned.add1 (stack_sidebar);
         paned.add2 (main_stack);
 
-        add (paned);
-        set_default_size (900, 600);
-        set_size_request (750, 500);
-        set_titlebar (header_bar);
-        title = _("Gnonogram Tools for Elementary");
+
     }
 
     public bool quit () {

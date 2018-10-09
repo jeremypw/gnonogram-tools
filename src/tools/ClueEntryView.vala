@@ -60,8 +60,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
 
-        var rows_grid = new GnonogramTools.DimensionGrid (rows_setting);
-        var cols_grid = new GnonogramTools.DimensionGrid (cols_setting);
+        var rows_grid = new GnonogramTools.SettingGrid (rows_setting);
+        var cols_grid = new GnonogramTools.SettingGrid (cols_setting);
 
         row_entry = new ClueEntryGrid ();
         col_entry = new ClueEntryGrid ();
@@ -191,7 +191,7 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
     }
 
-    public void hide () {
+    public void hidden () {
         if (changed) {
             quit ();
         }

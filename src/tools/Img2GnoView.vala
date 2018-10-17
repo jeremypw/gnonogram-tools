@@ -7,7 +7,8 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
     private Gnonograms.ScaleGrid rows_setting;
     private Gnonograms.ScaleGrid cols_setting;
     private Gtk.Image image_orig;
-    private Gtk.Image image_intermed;
+    private Gtk.Image image_intermed1;
+    private Gtk.Image image_intermed2;
     private Gnonograms.CellGrid model_cellgrid;
     private Gtk.EventBox eb_img;
     private Gdk.Pixbuf? pix_original = null;
@@ -37,7 +38,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         var controls_grid = new GnonogramTools.SettingGrid (name_setting);
         var image_grid = new Gtk.Grid ();
 
-        image_grid.set_size_request (300, -1);
+        image_grid.set_size_request (300, 600);
         image_grid.margin = 12;
         image_grid.row_spacing = controls_grid.row_spacing;
 
@@ -60,18 +61,28 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         solve_button.set_popover (solution_popover);
 
         image_orig = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
+        image_orig.no_show_all = true;
+        image_orig.visible = false;
         eb_img = new Gtk.EventBox ();
         eb_img.add (image_orig);
 
-        image_intermed = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
+        image_intermed1 = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
+        image_intermed1.no_show_all = true;
+        image_intermed1.visible = false;
+
+        image_intermed2 = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
+        image_intermed2.no_show_all = true;
+        image_intermed2.visible = false;
+
         model_cellgrid = new Gnonograms.CellGrid (model);
         model.game_state = Gnonograms.GameState.SETTING;
         model_cellgrid.draw_only = true;
+        model_cellgrid.no_show_all = true;
+        model_cellgrid.visible = false;
 
         model_cellgrid.set_size_request (200, 200);
 
         var bbox = new Gtk.ButtonBox (Gtk.Orientation.HORIZONTAL);
-
 
         bbox.add (load_button);
         bbox.add (save_button);
@@ -79,8 +90,9 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         bbox.margin = 12;
 
         image_grid.attach (eb_img, 0, 0, 1, 1);
-        image_grid.attach (image_intermed, 0, 1, 1, 1);
-        image_grid.attach (model_cellgrid, 0, 2, 1, 1);
+        image_grid.attach (image_intermed1, 0, 1, 1, 1);
+        image_grid.attach (image_intermed2, 0, 2, 1, 1);
+        image_grid.attach (model_cellgrid, 0, 3, 1, 1);
 
         attach (controls_grid, 0, 0, 1, 1);
         attach (image_grid, 1, 0, 1, 1);
@@ -159,6 +171,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
 
     private void clear_model () {
         model.clear ();
+        model_cellgrid.visible = false;
     }
 
     private void save_game (string? path = null, bool save_solution = false) {
@@ -209,40 +222,45 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
             }
 
             pix_original = new Gdk.Pixbuf.from_file (image_path);
-            var scaled_pix = pix_original.scale_simple (200,
-                                                        200 * pix_original.height / pix_original.width,
-                                                        Gdk.InterpType.HYPER);
-
-            var w = pix_original.width;
-            var h = pix_original.height;
-            var aspect = (double)h / (double)w;
-            Gdk.Pixbuf intermed_pix;
-            Gdk.Pixbuf scaled_intermed;
-
-            intermed_pix = convert_luminance (pix_original);
-            if (aspect > 1) {
-                scaled_intermed = intermed_pix.scale_simple ((int)(50 * 1 / aspect),
-                                                          50,
-                                                          Gdk.InterpType.HYPER);
-            } else {
-                scaled_intermed = intermed_pix.scale_simple (50,
-                                                          (int)(50 * aspect),
-                                                          Gdk.InterpType.HYPER);
-            }
-
-
-            scaled_intermed = scaled_intermed.scale_simple (scaled_intermed.width * 200 / 50,
-                                                           scaled_intermed.height * 200 / 50,
-                                                           Gdk.InterpType.HYPER);
-
-            image_orig.set_from_pixbuf (scaled_pix);
-            image_intermed.set_from_pixbuf (scaled_intermed);
+            image_orig.set_from_pixbuf (scale_pixbuf_for_display (pix_original));
             current_img_path = image_path;
+            convert_original_image ();
         } catch (GLib.Error e) {
             if (!(e is IOError.CANCELLED)) {
                 Gnonograms.Utils.show_error_dialog (_("Unable to load %s").printf (image_path), e.message, window);
             }
         }
+    }
+
+    private Gdk.Pixbuf scale_pixbuf_for_display (Gdk.Pixbuf pix) {
+        var w = pix_original.width;
+        var h = pix.height;
+        var aspect = (double)h / (double)w;
+        return pix.scale_simple (200,
+                                 (int)(200 * aspect),
+                                 Gdk.InterpType.NEAREST);
+    }
+
+    private void convert_original_image () {
+            Gdk.Pixbuf intermed1_pix;
+            Gdk.Pixbuf intermed2_pix;
+            Gdk.Pixbuf scaled_intermed1;
+            Gdk.Pixbuf scaled_intermed2;
+
+            var intermed1 = convert_to_grayscale_array (pix_original);
+            intermed1_pix = pixbuf_from_grayscale (intermed1, pix_original.width, pix_original.height);
+            var intermed2 = convert_edges (intermed1, pix_original.width, pix_original.height);
+            intermed2_pix = pixbuf_from_grayscale (intermed2, pix_original.width, pix_original.height);
+
+            scaled_intermed1 = scale_pixbuf_for_display (intermed1_pix);
+            scaled_intermed2 = scale_pixbuf_for_display (intermed2_pix);
+
+            image_intermed1.set_from_pixbuf (scaled_intermed1);
+            image_intermed2.set_from_pixbuf (scaled_intermed2);
+            image_orig.visible = true;
+            image_intermed1.visible = true;
+            image_intermed2.visible = true;
+            model_cellgrid.visible = true;
     }
 
     private string get_image_filename() {
@@ -283,33 +301,23 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         }
     }
 
-    private Gdk.Pixbuf convert_luminance (Gdk.Pixbuf orig_pix) {
-        if (orig_pix.bits_per_sample != 8 || orig_pix.n_channels < 3) {
-            Gnonograms.Utils.show_error_dialog (_("Cannot convert this image format"),
-                                                _("Need 8 bits per channel and at least 3 channels"),
-                                                window);
-            return orig_pix;
-        }
-
-        Gdk.Pixbuf converted_pix;
+    private uint8[] convert_to_grayscale_array (Gdk.Pixbuf orig_pix) {
         bool has_alpha = orig_pix.has_alpha;
         int width = orig_pix.width;
         int height = orig_pix.height;
-        int rowstride = orig_pix.rowstride;
 
-        converted_pix = orig_pix.copy();
-
-        unowned uint8[] pix = converted_pix.get_pixels ();
+        unowned uint8[] pixels = orig_pix.get_pixels ();
+        uint8[] gray = new uint8[width * height];
         double[] luminances = new double[width * height];
 
         int idx = 0;
         int ptr = 0;
         for (int h = 0; h < height; h++) {
             for (int w = 0; w < width; w++) {
-                double alphas = has_alpha ? (double)pix[idx + 3] / 255.0 : 1;
-                double rs = (double)pix[idx] / 255.0 * alphas;
-                double gs = (double)pix[idx + 1] / 255.0 * alphas;
-                double bs = (double)pix[idx + 2] / 255.0 * alphas;
+                double alphas = has_alpha ? (double)pixels[idx + 3] / 255.0 : 1;
+                double rs = (double)pixels[idx] / 255.0 * alphas;
+                double gs = (double)pixels[idx + 1] / 255.0 * alphas;
+                double bs = (double)pixels[idx + 2] / 255.0 * alphas;
                 double luminance = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs - alphas;
                 luminances[ptr] = luminance;
                 idx += orig_pix.n_channels;
@@ -329,36 +337,76 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
             }
         }
 
-
-
         /* Convert luminace to grayscale */
         double range = max_luminance - min_luminance;
         ptr = 0;
         for (int h = 0; h < height; h++) {
             for (int w = 0; w < width; w++) {
                 double l = luminances[ptr];
-                luminances[ptr] = (l - min_luminance) * 255.0 / range;
+                gray[ptr] = (uint8)((l - min_luminance) * 255.0 / range);
                 ptr++;
             }
         }
 
-        idx = 0;
-        ptr = 0;
+        return gray;
+    }
+
+    private uint8[] convert_edges (uint8[] gray, int width, int height) {
+        int idx = 0;
+        int ptr = 0;
+        uint8[] edges = new uint8[height * width];
+        uint8[] surround = new uint8[8];
+
         for (int h = 0; h < height; h++) {
             for (int w = 0; w < width; w++) {
-                var l = luminances[ptr];
-                pix[idx] = (uint8)l;
-                pix[idx + 1] = (uint8)l;
-                pix[idx + 2] = (uint8)l;
-                if (has_alpha) {
-                    pix[idx + 3] = 255;
+                ptr++;
+                var l = gray[ptr];
+                surround[0] = h > 0 && w > 0 ? gray[ptr - width - 1] : l;
+                surround[1] = h > 0 ? gray[ptr - width] : l;
+                surround[2] = h > 0 && w < width - 1 ? gray[ptr - width + 1] : l;
+                surround[3] = w > 1 ? gray[ptr - 1] : l;
+                surround[4] = w < width - 1 ? gray[ptr + 1] : l;
+                surround[5] = h < height -1 && w > 0 ? gray[ptr + width - 1] : l;
+                surround[6] = h < height -1 ? gray[ptr + width] : l;
+                surround[7] = h < height -1 && w < width -1 ? gray[ptr + width + 1] : l;
+
+                uint8 min = 255;
+                uint8 max = 0;
+                foreach (uint8 ls in surround) {
+                    if (min > ls) {
+                        min = ls;
+                    }
+                    if (max < ls) {
+                        max = ls;
+                    }
                 }
 
-                idx += orig_pix.n_channels;
+                edges[ptr] = max - min > 50 && l < max - min / 2 ? 0 : 255;
+                idx += 1;
+            }
+        }
+
+        return edges;
+    }
+
+    private Gdk.Pixbuf pixbuf_from_grayscale (uint8[] gray, int width, int height) {
+        var idx = 0;
+        var ptr = 0;
+        uint8[] pixels = new uint8[width * height * 3];
+
+        for (int h = 0; h < height; h++) {
+            for (int w = 0; w < width; w++) {
+                var l = gray[ptr];
+                pixels[idx] = (uint8)l;
+                pixels[idx + 1] = (uint8)l;
+                pixels[idx + 2] = (uint8)l;
+
+                idx += 3;
                 ptr++;
             }
         }
 
-        return converted_pix;
+        return new Gdk.Pixbuf.from_data (pixels, Gdk.Colorspace.RGB, false, 8, width, height, width * 3);
+
     }
 }

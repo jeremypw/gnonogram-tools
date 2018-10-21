@@ -6,9 +6,15 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
     private Gtk.Entry name_entry;
     private Gnonograms.ScaleGrid rows_setting;
     private Gnonograms.ScaleGrid cols_setting;
+    private Gnonograms.ScaleGrid edge_setting;
+    private Gnonograms.ScaleGrid black_setting;
     private Gtk.Image image_orig;
     private Gtk.Image image_intermed1;
     private Gtk.Image image_intermed2;
+    private uint8[] intermed1_data;
+    private uint8[] intermed2_data;
+    private uint edge_sens = 50;
+    private uint black_thr = 128;
     private Gnonograms.CellGrid model_cellgrid;
     private Gtk.EventBox eb_img;
     private Gdk.Pixbuf? pix_original = null;
@@ -44,9 +50,13 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
 
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
+        black_setting = new Gnonograms.ScaleGrid (_("Black sensitivity"));
+        edge_setting = new Gnonograms.ScaleGrid (_("Edge threshold"));
 
         controls_grid.add_a_setting (rows_setting);
         controls_grid.add_a_setting (cols_setting);
+        controls_grid.add_a_setting (black_setting);
+        controls_grid.add_a_setting (edge_setting);
 
         load_button = new Gtk.Button.with_label (_("Load Image"));
         save_button = new Gtk.Button.with_label (_("Save Game"));
@@ -101,6 +111,15 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
 
         rows_setting.value_changed.connect (on_dimension_changed);
         cols_setting.value_changed.connect (on_dimension_changed);
+        black_setting.value_changed.connect ((val) => {
+            black_thr = (int)(225 - val * 4);
+            update_intermed2 ();
+
+        });
+        edge_setting.value_changed.connect ((val) => {
+            edge_sens = (int)(10 + val * 4);
+            update_intermed2 ();
+        });
 
         save_button.clicked.connect (() => {
             save_game (null, true);
@@ -114,6 +133,8 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         });
 
         restore_settings ();
+        black_setting.set_value (25);
+        edge_setting.set_value (25);
         show_all ();
     }
 
@@ -242,25 +263,26 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
     }
 
     private void convert_original_image () {
-            Gdk.Pixbuf intermed1_pix;
-            Gdk.Pixbuf intermed2_pix;
-            Gdk.Pixbuf scaled_intermed1;
-            Gdk.Pixbuf scaled_intermed2;
-
-            var intermed1 = convert_to_grayscale_array (pix_original);
-            intermed1_pix = pixbuf_from_grayscale (intermed1, pix_original.width, pix_original.height);
-            var intermed2 = convert_edges (intermed1, pix_original.width, pix_original.height);
-            intermed2_pix = pixbuf_from_grayscale (intermed2, pix_original.width, pix_original.height);
-
-            scaled_intermed1 = scale_pixbuf_for_display (intermed1_pix);
-            scaled_intermed2 = scale_pixbuf_for_display (intermed2_pix);
-
-            image_intermed1.set_from_pixbuf (scaled_intermed1);
-            image_intermed2.set_from_pixbuf (scaled_intermed2);
+            update_intermed1 ();
+            update_intermed2 ();
             image_orig.visible = true;
             image_intermed1.visible = true;
             image_intermed2.visible = true;
             model_cellgrid.visible = true;
+    }
+
+    private void update_intermed1 () {
+        intermed1_data = convert_to_grayscale_array (pix_original);
+        var intermed1_pix = pixbuf_from_grayscale (intermed1_data, pix_original.width, pix_original.height);
+        var scaled_intermed1 = scale_pixbuf_for_display (intermed1_pix);
+        image_intermed1.set_from_pixbuf (scaled_intermed1);
+    }
+
+    private void update_intermed2 () {
+        intermed2_data = convert_edges (intermed1_data, pix_original.width, pix_original.height);
+        var intermed2_pix = pixbuf_from_grayscale (intermed2_data, pix_original.width, pix_original.height);
+        var scaled_intermed2 = scale_pixbuf_for_display (intermed2_pix);
+        image_intermed2.set_from_pixbuf (scaled_intermed2);
     }
 
     private string get_image_filename() {
@@ -381,7 +403,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
                     }
                 }
 
-                edges[ptr] = max - min > 50 && l < max - min / 2 ? 0 : 255;
+                edges[ptr] = max - min > edge_sens && l < black_thr ? 0 : 255;
                 idx += 1;
             }
         }

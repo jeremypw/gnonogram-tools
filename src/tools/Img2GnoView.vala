@@ -6,6 +6,8 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
     private Gtk.Entry name_entry;
     private Gnonograms.ScaleGrid rows_setting;
     private Gnonograms.ScaleGrid cols_setting;
+    private Gnonograms.ScaleGrid contrast_base_setting;
+    private Gnonograms.ScaleGrid contrast_range_setting;
     private Gnonograms.ScaleGrid edge_setting;
     private Gnonograms.ScaleGrid black_setting;
     private Gtk.Image image_orig;
@@ -51,11 +53,15 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
 
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
+        contrast_base_setting = new Gnonograms.ScaleGrid (_("Contrast baseline"));
+        contrast_range_setting = new Gnonograms.ScaleGrid (_("Contrast range"));
         black_setting = new Gnonograms.ScaleGrid (_("Black sensitivity"));
         edge_setting = new Gnonograms.ScaleGrid (_("Edge threshold"));
 
         controls_grid.add_a_setting (rows_setting);
         controls_grid.add_a_setting (cols_setting);
+        controls_grid.add_a_setting (contrast_base_setting);
+        controls_grid.add_a_setting (contrast_range_setting);
         controls_grid.add_a_setting (black_setting);
         controls_grid.add_a_setting (edge_setting);
 
@@ -117,6 +123,10 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
 
         rows_setting.value_changed.connect (on_dimension_changed);
         cols_setting.value_changed.connect (on_dimension_changed);
+
+        contrast_base_setting.value_changed.connect (on_contrast_changed);
+        contrast_range_setting.value_changed.connect (on_contrast_changed);
+
         black_setting.value_changed.connect ((val) => {
             black_thr = (int)(225 - val * 4);
             update_intermed2 ();
@@ -137,6 +147,8 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         });
 
         realize.connect (() => {
+            contrast_base_setting.set_value (0);
+            contrast_range_setting.set_value (50);
             black_setting.set_value (25);
             edge_setting.set_value (25);
         });
@@ -295,6 +307,11 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         image_intermed1.set_from_pixbuf (scaled_intermed1);
     }
 
+    private void on_contrast_changed () {
+        update_intermed1 ();
+        update_intermed2 ();
+    }
+
     private void update_intermed2 () {
         if (pix_original == null || intermed1_data == null) {
             return;
@@ -384,11 +401,14 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
 
         /* Convert luminace range  to intermed1_datascale 0 - 255 */
         double range = max_luminance - min_luminance;
+        range = range * contrast_range_setting.get_value () / 50.0;
+        min_luminance += (range * contrast_base_setting.get_value ()) / 100.0;
+
         ptr = 0;
         for (int h = 0; h < height; h++) {
             for (int w = 0; w < width; w++) {
                 double l = luminances[ptr];
-                intermed1_data[ptr] = (int)((l - min_luminance) * 255.0 / range);
+                intermed1_data[ptr] = (int)((l - min_luminance) * 255.0 / range).clamp (0, 255);
                 ptr++;
             }
         }
@@ -478,7 +498,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
                         ptr++;
                     }
 
-                    ptr += pix_original.width - w_lim;
+                    ptr += pix_original.width - w_lim - 1;
                 }
 
                 var state = total < threshold ? Gnonograms.CellState.FILLED : Gnonograms.CellState.EMPTY;

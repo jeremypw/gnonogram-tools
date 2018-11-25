@@ -11,11 +11,11 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
     private Gtk.Image image_orig;
     private Gtk.Image image_intermed1;
     private Gtk.Image image_intermed2;
+    private Gtk.Image image_cellgrid;
     private int[] intermed1_data;
     private int[] intermed2_data;
     private uint edge_sens = 50;
     private uint black_thr = 128;
-    private Gnonograms.CellGrid model_cellgrid;
     private Gtk.EventBox eb_img;
     private Gdk.Pixbuf? pix_original = null;
 
@@ -84,13 +84,9 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         image_intermed2.no_show_all = true;
         image_intermed2.visible = false;
 
-        model_cellgrid = new Gnonograms.CellGrid (model);
-        model.game_state = Gnonograms.GameState.SETTING;
-        model_cellgrid.draw_only = true;
-        model_cellgrid.no_show_all = true;
-        model_cellgrid.visible = false;
-
-        model_cellgrid.set_size_request (200, 200);
+        image_cellgrid = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
+        image_cellgrid.no_show_all = true;
+        image_cellgrid.visible = false;
 
         var bbox = new Gtk.ButtonBox (Gtk.Orientation.HORIZONTAL);
 
@@ -102,7 +98,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         image_grid.attach (eb_img, 0, 0, 1, 1);
         image_grid.attach (image_intermed1, 0, 1, 1, 1);
         image_grid.attach (image_intermed2, 0, 2, 1, 1);
-        image_grid.attach (model_cellgrid, 0, 3, 1, 1);
+        image_grid.attach (image_cellgrid, 0, 3, 1, 1);
 
         attach (controls_grid, 0, 0, 1, 1);
         attach (image_grid, 1, 0, 1, 1);
@@ -115,6 +111,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
             update_intermed2 ();
 
         });
+
         edge_setting.value_changed.connect ((val) => {
             edge_sens = (int)(10 + val * 4);
             update_intermed2 ();
@@ -187,11 +184,11 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         var rows = rows_setting.get_value ();
         model.dimensions = { cols, rows };
         clear_model ();
+        convert_cell_grid ();
     }
 
     private void clear_model () {
         model.clear ();
-        model_cellgrid.visible = false;
     }
 
     private void save_game (string? path = null, bool save_solution = false) {
@@ -255,13 +252,13 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
     private Gdk.Pixbuf scale_pixbuf_for_display (Gdk.Pixbuf pix) {
         var w = pix.width;
         var h = pix.height;
-        var aspect = (double)h / (double)w;
+        double aspect = (double)h / (double)w;
         if (w > h) {
             return pix.scale_simple (100,
-                                     (int)(100 * aspect),
+                                     (int)(100.0 * aspect),
                                      Gdk.InterpType.NEAREST);
         } else {
-            return pix.scale_simple ((int)(100 / aspect),
+            return pix.scale_simple ((int)(100.0 / aspect),
                                      100,
                                      Gdk.InterpType.NEAREST);
         }
@@ -273,7 +270,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         image_orig.visible = true;
         image_intermed1.visible = true;
         image_intermed2.visible = true;
-        model_cellgrid.visible = true;
+        image_cellgrid.visible = true;
     }
 
     private void update_intermed1 () {
@@ -421,7 +418,50 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
             }
         }
 
+        convert_cell_grid ();
         return;
+    }
+
+    private void convert_cell_grid () {
+        if (pix_original == null) {
+            return;
+        }
+
+        var width = (double)(pix_original.width);
+        var height = (double)(pix_original.height);
+        var pix_per_col = width / (double)(model.cols);
+        var pix_per_row = height / (double)(model.rows);
+        int h_lim = (int)(pix_per_row);
+        int w_lim = (int)(pix_per_col);
+        int array_size = pix_original.width * pix_original.height;
+
+        var threshold = h_lim * w_lim * 175;
+
+        for (int row = 0; row < model.rows; row++) {
+            for (int col = 0; col < model.cols; col++) {
+                int total = 0;
+                var ptr_w = (int)(col * pix_per_col + 1);
+                var ptr_h = (int)(row * pix_per_row + 1);
+                int ptr = ptr_h * pix_original.width + ptr_w;
+                for (int h = 0; h < h_lim; h++) {
+                    for (int w = 0; w < w_lim; w++) {
+                        if (ptr > array_size) {
+                            critical ("array bound exceeded");
+                        } else {
+                            total += intermed2_data[ptr];
+                        }
+                        ptr++;
+                    }
+
+                    ptr+= pix_original.width - w_lim - 1;
+                }
+
+                var state = total < threshold ? Gnonograms.CellState.FILLED : Gnonograms.CellState.EMPTY;
+                model.set_data_from_rc (row, col, state);
+            }
+        }
+
+        image_cellgrid.set_from_pixbuf (scale_pixbuf_for_display (pixbuf_from_model ()));
     }
 
     private Gdk.Pixbuf pixbuf_from_grayscale (int[] gray, int width, int height) {
@@ -442,6 +482,27 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         }
 
         return new Gdk.Pixbuf.from_data (pixels, Gdk.Colorspace.RGB, false, 8, width, height, width * 3);
+    }
 
+    private Gdk.Pixbuf pixbuf_from_model () {
+        var idx = 0;
+        var ptr = 0;
+        var width = model.cols;
+        var height = model.rows;
+        uint8[] pixels = new uint8[width * height * 3];
+
+        for (int h = 0; h < height; h++) {
+            for (int w = 0; w < width; w++) {
+                var l = model.get_data_from_rc (h, w) == Gnonograms.CellState.FILLED ? 0 : 255;
+                pixels[idx] = (uint8)l;
+                pixels[idx + 1] = (uint8)l;
+                pixels[idx + 2] = (uint8)l;
+
+                idx += 3;
+                ptr++;
+            }
+        }
+
+        return new Gdk.Pixbuf.from_data (pixels, Gdk.Colorspace.RGB, false, 8, (int)width, (int)height, (int)width * 3);
     }
 }

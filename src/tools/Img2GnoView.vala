@@ -47,6 +47,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         image_grid.set_size_request (300, 600);
         image_grid.margin = 12;
         image_grid.row_spacing = controls_grid.row_spacing;
+        image_grid.column_spacing = 6;
 
         rows_setting = new Gnonograms.ScaleGrid (_("Rows"));
         cols_setting = new Gnonograms.ScaleGrid (_("Columns"));
@@ -73,20 +74,26 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         image_orig = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
         image_orig.no_show_all = true;
         image_orig.visible = false;
-        eb_img = new Gtk.EventBox ();
-        eb_img.add (image_orig);
+        var orig_label = new Gtk.Label ("Original Image");
+        orig_label.no_show_all = true;
 
         image_intermed1 = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
         image_intermed1.no_show_all = true;
         image_intermed1.visible = false;
+        var intermed1_label = new Gtk.Label ("Grey Scale");
+        intermed1_label.no_show_all = true;
 
         image_intermed2 = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
         image_intermed2.no_show_all = true;
         image_intermed2.visible = false;
+        var intermed2_label = new Gtk.Label ("Edge detect");
+        intermed2_label.no_show_all = true;
 
         image_cellgrid = new Gtk.Image.from_icon_name ("missing-image", Gtk.IconSize.LARGE_TOOLBAR);
         image_cellgrid.no_show_all = true;
         image_cellgrid.visible = false;
+        var cellgrid_label = new Gtk.Label ("Cell Grid");
+        cellgrid_label.no_show_all = true;
 
         var bbox = new Gtk.ButtonBox (Gtk.Orientation.HORIZONTAL);
 
@@ -95,10 +102,14 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         bbox.add (solve_button);
         bbox.margin = 12;
 
-        image_grid.attach (eb_img, 0, 0, 1, 1);
+        image_grid.attach (image_orig, 0, 0, 1, 1);
+        image_grid.attach (orig_label, 1, 0, 1, 1);
         image_grid.attach (image_intermed1, 0, 1, 1, 1);
+        image_grid.attach (intermed1_label, 1, 1, 1, 1);
         image_grid.attach (image_intermed2, 0, 2, 1, 1);
+        image_grid.attach (intermed2_label, 1, 2, 1, 1);
         image_grid.attach (image_cellgrid, 0, 3, 1, 1);
+        image_grid.attach (cellgrid_label, 1, 3, 1, 1);
 
         attach (controls_grid, 0, 0, 1, 1);
         attach (image_grid, 1, 0, 1, 1);
@@ -342,6 +353,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         intermed1_data = new int[width * height];
         double[] luminances = new double[width * height];
 
+        /* Convert colors to luminances */
         int idx = 0;
         int ptr = 0;
         for (int h = 0; h < height; h++) {
@@ -350,13 +362,14 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
                 double rs = (double)pixels[idx] / 255.0 * alphas;
                 double gs = (double)pixels[idx + 1] / 255.0 * alphas;
                 double bs = (double)pixels[idx + 2] / 255.0 * alphas;
-                double luminance = rs + gs + bs - alphas;
+                double luminance = rs + gs + bs - alphas; /* TODO tweak luminance formula or make user adjustable */
                 luminances[ptr] = luminance;
                 idx += orig_pix.n_channels;
                 ptr++;
             }
         }
 
+        /* Find lowest and highest luminance */
         double min_luminance = 10000.0;
         double max_luminance = -10000.0;
         foreach (double l in luminances) {
@@ -369,7 +382,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
             }
         }
 
-        /* Convert luminace to intermed1_datascale */
+        /* Convert luminace range  to intermed1_datascale 0 - 255 */
         double range = max_luminance - min_luminance;
         ptr = 0;
         for (int h = 0; h < height; h++) {
@@ -385,23 +398,26 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
 
     private void convert_edges (int width, int height) {
         intermed2_data = new int[height * width];
-        int[] surround = new int[8];
+        int[] surround = new int[8]; /* holds the pixels surrounding any one pixel */
 
         int idx = 0;
         int ptr = 0;
+        /* Examine each pixel and its surroundings */
         for (int h = 0; h < height; h++) {
             for (int w = 0; w < width; w++) {
                 ptr++;
+                /* surrounding pixels off the edge deemed to be same as target pixel */
                 var l = intermed1_data[ptr];
-                surround[0] = h > 0 && w > 0 ? intermed1_data[ptr - width - 1] : l;
-                surround[1] = h > 0 ? intermed1_data[ptr - width] : l;
-                surround[2] = h > 0 && w < width - 1 ? intermed1_data[ptr - width + 1] : l;
-                surround[3] = w > 1 ? intermed1_data[ptr - 1] : l;
-                surround[4] = w < width - 1 ? intermed1_data[ptr + 1] : l;
-                surround[5] = h < height -1 && w > 0 ? intermed1_data[ptr + width - 1] : l;
-                surround[6] = h < height -1 ? intermed1_data[ptr + width] : l;
-                surround[7] = h < height -1 && w < width -1 ? intermed1_data[ptr + width + 1] : l;
+                surround[0] = h > 0 && w > 0 ? intermed1_data[ptr - width - 1] : l; /* Top left */
+                surround[1] = h > 0 ? intermed1_data[ptr - width] : l;  /* Top center */
+                surround[2] = h > 0 && w < width - 1 ? intermed1_data[ptr - width + 1] : l;  /* Top right */
+                surround[3] = w > 0 ? intermed1_data[ptr - 1] : l;  /* Center left */
+                surround[4] = w < width - 1 ? intermed1_data[ptr + 1] : l; /* Center right */
+                surround[5] = h < height -1 && w > 0 ? intermed1_data[ptr + width - 1] : l; /* Bottom left */
+                surround[6] = h < height -1 ? intermed1_data[ptr + width] : l; /* Bottom center */
+                surround[7] = h < height -1 && w < width -1 ? intermed1_data[ptr + width + 1] : l; /* Bottom right */
 
+                /* Find darkest and brightest surrounding */
                 int min = 255;
                 int max = 0;
                 foreach (int ls in surround) {
@@ -413,7 +429,13 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
                     }
                 }
 
-                intermed2_data[ptr] = max - min > edge_sens && l < black_thr ? 0 : 255;
+                /* If target is on edge and low luminance mark as black else as white */
+                if (max - min > edge_sens) {
+                    intermed2_data[ptr] = l < black_thr ? 0 : 255;
+                } else {
+                    intermed2_data[ptr] = l;
+                }
+
                 idx += 1;
             }
         }
@@ -431,29 +453,32 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         var height = (double)(pix_original.height);
         var pix_per_col = width / (double)(model.cols);
         var pix_per_row = height / (double)(model.rows);
-        int h_lim = (int)(pix_per_row);
-        int w_lim = (int)(pix_per_col);
+        int h_lim = (int)(pix_per_row) + 1; /* number of pixels to cover one height of cell */
+        int w_lim = (int)(pix_per_col) + 1; /* number of pixels to cover width of cell */
         int array_size = pix_original.width * pix_original.height;
 
-        var threshold = h_lim * w_lim * 175;
+        var threshold = h_lim * w_lim * 175;  /* Make 175 user adjustable? */
 
+        /* Iterate over cellgrid cells */
         for (int row = 0; row < model.rows; row++) {
             for (int col = 0; col < model.cols; col++) {
                 int total = 0;
-                var ptr_w = (int)(col * pix_per_col + 1);
-                var ptr_h = (int)(row * pix_per_row + 1);
-                int ptr = ptr_h * pix_original.width + ptr_w;
+                /* Get pointer to first pixel falling (partially) in cell */
+                var ptr = (int)(row * pix_per_row) * pix_original.width + (int)(col * pix_per_col);
+                /* Average all pixels falling at least partly within cell */
                 for (int h = 0; h < h_lim; h++) {
                     for (int w = 0; w < w_lim; w++) {
                         if (ptr > array_size) {
-                            critical ("array bound exceeded");
+                            critical ("array bound %i exceeded %i  : h %i, w %i", array_size, ptr, h, w);
+                            total += 175;
                         } else {
                             total += intermed2_data[ptr];
                         }
+
                         ptr++;
                     }
 
-                    ptr+= pix_original.width - w_lim - 1;
+                    ptr += pix_original.width - w_lim;
                 }
 
                 var state = total < threshold ? Gnonograms.CellState.FILLED : Gnonograms.CellState.EMPTY;

@@ -10,6 +10,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
     private Gnonograms.ScaleGrid contrast_range_setting;
     private Gnonograms.ScaleGrid edge_setting;
     private Gnonograms.ScaleGrid black_setting;
+    private Gnonograms.SettingSwitch invert_switch;
     private Gtk.Image image_orig;
     private Gtk.Image image_intermed1;
     private Gtk.Image image_intermed2;
@@ -57,6 +58,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         contrast_range_setting = new Gnonograms.ScaleGrid (_("Contrast range"));
         black_setting = new Gnonograms.ScaleGrid (_("Black sensitivity"));
         edge_setting = new Gnonograms.ScaleGrid (_("Edge threshold"));
+        invert_switch = new Gnonograms.SettingSwitch ("Invert");
 
         controls_grid.add_a_setting (rows_setting);
         controls_grid.add_a_setting (cols_setting);
@@ -64,6 +66,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         controls_grid.add_a_setting (contrast_range_setting);
         controls_grid.add_a_setting (black_setting);
         controls_grid.add_a_setting (edge_setting);
+        controls_grid.add_a_setting (invert_switch);
 
         load_button = new Gtk.Button.with_label (_("Load Image"));
         save_button = new Gtk.Button.with_label (_("Save Game"));
@@ -136,6 +139,10 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         edge_setting.value_changed.connect ((val) => {
             edge_sens = (int)(10 + val * 4);
             update_intermed2 ();
+        });
+
+        invert_switch.@switch.state_changed.connect (() => {
+            convert_cell_grid ();
         });
 
         save_button.clicked.connect (() => {
@@ -469,6 +476,9 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
             return;
         }
 
+        var black_state = invert_switch.get_state () ? Gnonograms.CellState.FILLED : Gnonograms.CellState.EMPTY;
+        var white_state = invert_switch.get_state () ? Gnonograms.CellState.EMPTY : Gnonograms.CellState.FILLED;
+
         var width = (double)(pix_original.width);
         var height = (double)(pix_original.height);
         var pix_per_col = width / (double)(model.cols);
@@ -501,7 +511,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
                     ptr += pix_original.width - w_lim - 1;
                 }
 
-                var state = total < threshold ? Gnonograms.CellState.FILLED : Gnonograms.CellState.EMPTY;
+                var state = total < threshold ? black_state : white_state;
                 model.set_data_from_rc (row, col, state);
             }
         }

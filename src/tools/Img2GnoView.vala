@@ -149,7 +149,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         });
 
         invert_switch.@switch.state_changed.connect (() => {
-            convert_cell_grid ();
+            update_intermed2 ();
         });
 
         save_button.clicked.connect (() => {
@@ -278,15 +278,8 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
 
             var pb = new Gdk.Pixbuf.from_file (image_path);
             var pixels = pb.height * pb.width;
-
-            if (pixels < 10000) {
-                pix_original = pb;
-                image_orig.set_from_pixbuf (scale_pixbuf_for_display (pix_original));
-            } else {
-                pix_original = scale_pixbuf_for_display (pb);
-                image_orig.set_from_pixbuf (pix_original);
-            }
-
+            pix_original = scale_pixbuf_for_convert (pb);
+            image_orig.set_from_pixbuf (scale_pixbuf_for_display (pix_original));
             current_img_path = image_path;
             convert_original_image ();
         } catch (GLib.Error e) {
@@ -308,6 +301,21 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
             return pix.scale_simple ((int)(100.0 / aspect),
                                      100,
                                      Gdk.InterpType.NEAREST);
+        }
+    }
+
+    private Gdk.Pixbuf scale_pixbuf_for_convert (Gdk.Pixbuf pix) {
+        var w = pix.width;
+        var h = pix.height;
+        double aspect = (double)h / (double)w;
+        if (w > h) {
+            return pix.scale_simple (100,
+                                     (int)(100.0 * aspect),
+                                     Gdk.InterpType.BILINEAR);
+        } else {
+            return pix.scale_simple ((int)(100.0 / aspect),
+                                     100,
+                                     Gdk.InterpType.BILINEAR);
         }
     }
 
@@ -389,7 +397,6 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
         bool has_alpha = orig_pix.has_alpha;
         int width = orig_pix.width;
         int height = orig_pix.height;
-
         unowned uint8[] pixels = orig_pix.get_pixels ();
         intermed1_data = new int[width * height];
         double[] luminances = new double[width * height];
@@ -403,7 +410,7 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
                 double rs = (double)pixels[idx] / 255.0 * alphas;
                 double gs = (double)pixels[idx + 1] / 255.0 * alphas;
                 double bs = (double)pixels[idx + 2] / 255.0 * alphas;
-                double luminance = rs + gs + bs - alphas; /* TODO tweak luminance formula or make user adjustable */
+                double luminance = 0.25 * rs + 0.25 * gs + 0.25 * bs + (1 - alphas); /* TODO tweak luminance formula or make user adjustable */
                 luminances[ptr] = luminance;
                 idx += orig_pix.n_channels;
                 ptr++;
@@ -458,13 +465,14 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
      * -1 -2 -1
      */
 
-
     private void convert_edges (int width, int height) {
         intermed2_data = new int[height * width];
         int[] matrix = new int[9]; /* holds the pixels surrounding any one pixel plus that pixel */
         int[] mask_x = new int[] {-1, 0, 1, -2, 0, 2, -1, 0, 1};
         int[] mask_y = new int[] {1, 2, 1, 0, 0, 0, -1, -2, -1};
 
+        var black_state = invert_switch.get_state () ? 255 : 0;
+        var clear_state = invert_switch.get_state () ? 0 : 255;
         /* Examine each pixel and its surroundings */
         for (int h = 0; h < height; h++) {
             for (int w = 0; w < width; w++) {
@@ -492,10 +500,10 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
                         dy += mask_y[i] * matrix[i];
                     }
 
-                    double grad_approx = int.max (dx.abs (), dy.abs ()) / 6.0;
-                    intermed2_data[ptr] = grad_approx > edge_sens ? 255 : 0;
+                    double grad_approx = int.max (dx.abs (), dy.abs ());
+                    intermed2_data[ptr] = grad_approx > edge_sens ? black_state : clear_state;
                 } else { /* on edge */
-                    intermed2_data[ptr] = intermed1_data[ptr] < black_thr ? 0 : 255;
+                    intermed2_data[ptr] = intermed1_data[ptr] < black_thr ? black_state : clear_state;
                 }
             }
         }
@@ -509,60 +517,64 @@ public class GnonogramTools.Img2GnoView : Gtk.Grid, GnonogramTools.ToolInterface
             return;
         }
 
-        var black_state = invert_switch.get_state () ? Gnonograms.CellState.FILLED : Gnonograms.CellState.EMPTY;
-        var white_state = invert_switch.get_state () ? Gnonograms.CellState.EMPTY : Gnonograms.CellState.FILLED;
+        var invert = invert_switch.get_state ();
+        var clear_state = invert ? Gnonograms.CellState.EMPTY : Gnonograms.CellState.FILLED;
+        var black_state = invert ? Gnonograms.CellState.FILLED : Gnonograms.CellState.EMPTY;
 
-        var width = (double)(pix_original.width);
-        var height = (double)(pix_original.height);
-        var pix_per_col = width / (double)(model.cols);
-        var pix_per_row = height / (double)(model.rows);
-        int h_lim = (int)(pix_per_row); /* number of pixels to cover one height of cell */
-        int w_lim = (int)(pix_per_col); /* number of pixels to cover width of cell */
-        int array_size = pix_original.width * pix_original.height;
-        int[] totals = new int[model.rows * model.cols];
-
-        var thr_px = (int) (255.0 * cell_threshold_setting.get_value () / 50.0);
-
-        var threshold = h_lim * w_lim * thr_px;  /* Make 175 user adjustable? */
-
-//        /* Iterate over pixels and allocate to appropriate cell (s) */
-//        int ptr = 0;
-//        for (int r = 0; r < pix_original.height; r++) {
-//            var row = (int)(r / pix_per_row);
-//            for (int c = 0; c < pix_original.width; c++) {
-//                var col = (int)(c / pix_per_col);
-//                totals[row * model.cols + col] = intermed2_data[ptr];
-//                ptr++;
-//            }
-//        }
-
-//        int ptr = 0;
-        /* Iterate over cellgrid cells */
-        for (int row = 0; row < model.rows; row++) {
-            for (int col = 0; col < model.cols; col++) {
-                int total = 0;
-                /* Get pointer to first pixel falling (partially) in cell */
-                var ptr = (int)(row * pix_per_row) * pix_original.width + (int)(col * pix_per_col);
-                /* Average all pixels falling at least partly within cell */
-                for (int h = 0; h < h_lim; h++) {
-                    for (int w = 0; w < w_lim; w++) {
-                        if (ptr > array_size) {
-                            critical ("array bound %i exceeded %i  : h %i, w %i", array_size, ptr, h, w);
-                            total += thr_px;
-                        } else {
-                            total += intermed2_data[ptr];
-                        }
-
-                        ptr++;
-                    }
-
-                    ptr += pix_original.width - w_lim - 1;
-                }
-
-                var state = total < threshold ? black_state : white_state;
-                model.set_data_from_rc (row, col, state);
+        for (int r = 0; r < model.rows; r++) {
+            for (int c = 0; c < model.cols; c++) {
+                model.set_data_from_rc (r, c, clear_state);
             }
         }
+
+        var pix_per_row = (double)(pix_original.height) / (double)(model.rows);
+        var pix_per_col = (double)(pix_original.width) / (double)(model.cols);
+        var rows_per_pix = ((int)(1 / pix_per_row)).clamp (1, 10);
+        var cols_per_pix = ((int)(1 / pix_per_col)).clamp (1, 10);
+        double[] total_l = new double[model.rows * model.cols];
+        for (int i = 0; i < model.rows * model.cols; i++) {
+            total_l[i] = 0.0;
+        }
+
+        int[] avg_over = new int[model.rows * model.cols];
+        for (int i = 0; i < model.rows * model.cols; i++) {
+            avg_over[i] = 0;
+        }
+
+        var threshold = cell_threshold_setting.get_value () * 5;
+
+        for (int h = 0; h < pix_original.height; h++) {
+            for (int w = 0; w < pix_original.width; w++) {
+                var ptr = h * pix_original.width + w;
+                int r = (int)((double)h / pix_per_row);
+                int c = (int)((double)w / pix_per_col);
+
+                for (int i = 0; i < rows_per_pix; i++) {
+                    for (int j = 0; j < cols_per_pix; j++) {
+                        if (r + i < model.rows && c + j < model.cols) {
+                            var idx = (r + i) * model.cols + c + j;
+                            total_l[idx] += intermed2_data[ptr];
+                            avg_over[idx]++;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (int r = 0; r < model.rows; r++) {
+            for (int c = 0; c < model.cols; c++) {
+                var idx = r * model.cols + c;
+                assert (avg_over[idx] > 0);
+                var clear = invert ? total_l[idx] / avg_over[idx] > threshold :
+                                     total_l[idx] / avg_over[idx] < 255 - threshold;
+                if (clear) {
+                    model.set_data_from_rc (r, c, clear_state);
+                } else {
+                    model.set_data_from_rc (r, c, black_state);
+                }
+            }
+        }
+
 
         image_cellgrid.set_from_pixbuf (scale_pixbuf_for_display (pixbuf_from_model ()));
     }

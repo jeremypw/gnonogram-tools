@@ -119,8 +119,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         });
 
         realize.connect (() => {
-            row_entry.update_n_entries ((int)(rows_setting.get_value ()));
-            col_entry.update_n_entries ((int)(cols_setting.get_value ()));
+            row_entry.update_n_entries ((int)(rows_setting.@value));
+            col_entry.update_n_entries ((int)(cols_setting.@value));
         });
 
         restore_settings ();
@@ -167,8 +167,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             cols = settings.get_uint ("columns");
         }
 
-        rows_setting.set_value (rows);
-        cols_setting.set_value (cols);
+        rows_setting.@value = rows;
+        cols_setting.@value = cols;
 
         if (saved_state != null) {
             current_game_path = saved_state.get_string ("current-game-path");
@@ -183,8 +183,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     }
 
     public bool quit () {
-        settings.set_uint ("rows",  rows_setting.get_value ());
-        settings.set_uint ("columns",  cols_setting.get_value ());
+        settings.set_uint ("rows",  rows_setting.@value);
+        settings.set_uint ("columns",  cols_setting.@value);
 
 
         if (temporary_game_path != null && current_game_path == "") {
@@ -204,8 +204,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
     private void on_dimension_changed (ClueEntryGrid changed, ClueEntryGrid other, uint new_val) {
         changed.update_n_entries ((int)new_val);
         other.size = new_val;
-        var cols = cols_setting.get_value ();
-        var rows = rows_setting.get_value ();
+        var cols = cols_setting.@value;
+        var rows = rows_setting.@value;
         model.dimensions = { cols, rows };
     }
 
@@ -227,8 +227,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         string game_name = name_entry.text != "" ? name_entry.text : Gnonograms.UNTITLED_NAME;
 
         var dim = Gnonograms.Dimensions ();
-        dim.height = rows_setting.get_value ();
-        dim.width = cols_setting.get_value ();
+        dim.height = rows_setting.@value;
+        dim.width = cols_setting.@value;
 
         var row_clues = row_entry.get_clues ();
         var col_clues = col_entry.get_clues ();
@@ -287,8 +287,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
             var row_clues = reader.row_clues;
             var col_clues = reader.col_clues;
 
-            rows_setting.set_value (row_clues.length);
-            cols_setting.set_value (col_clues.length);
+            rows_setting.@value = row_clues.length;
+            cols_setting.@value = col_clues.length;
 
             row_entry.set_clues (row_clues);
             col_entry.set_clues (col_clues);
@@ -333,8 +333,8 @@ public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterfa
         }
 
         var dim = Gnonograms.Dimensions ();
-        dim.height = rows_setting.get_value ();
-        dim.width = cols_setting.get_value ();
+        dim.height = rows_setting.@value;
+        dim.width = cols_setting.@value;
         var solver = new Gnonograms.Solver (dim);
         solver.configure_from_grade (Gnonograms.Difficulty.COMPUTER);
         var diff = solver.solve_clues (row_entry.get_clues (), col_entry.get_clues ());

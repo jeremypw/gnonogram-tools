@@ -3,7 +3,7 @@ Tools for creating gnonogram games, written in Vala/Gtk and intended primarily f
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-![Screenshot](data/screenshots/Dummy.png)
+![Screenshot](data/screenshots/ClueEntry.png)
 
 ### Dependencies
 These dependencies must be present before building

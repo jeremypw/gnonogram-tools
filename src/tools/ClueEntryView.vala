@@ -1,4 +1,4 @@
-public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterface {
+./public class GnonogramTools.ClueEntryView : Gtk.Grid, GnonogramTools.ToolInterface {
     const string EDITOR_SETTINGS_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.settings";
     const string EDITOR_STATE_SCHEMA = "com.github.jeremypw.gnonogram-tools.clue-editor.saved-state";
     const string UNSAVED_FILENAME = "ClueEditor" + Gnonograms.GAMEFILEEXTENSION;
